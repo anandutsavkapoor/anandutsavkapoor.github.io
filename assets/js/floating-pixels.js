@@ -114,7 +114,7 @@
   } else {
     // ── Gravity N-body: region varies per page to avoid text ────────────────
     var colors = ["#00bcd4", "#e040fb", "#00bcd4", "#e040fb", "#4dd0e1", "#ce93d8"];
-    var N = 20; // 20 particles → 190 force pairs per frame, still trivial
+    var N = 50; // 50 particles → 1225 force pairs per frame
     var G = 1.5; // lower G → slower orbital speeds (v ∝ √G)
     var softSq = 144; // softening ε² = 12² px
     var damping = 0.9995; // near-conservative for slow, persistent orbits
@@ -193,10 +193,15 @@
 
     var mScale = 80; // tidal stripping scale radius (px)
 
+    // Pre-allocate acceleration and effective-mass arrays — avoids GC every frame
+    var ax = new Float64Array(N);
+    var ay = new Float64Array(N);
+    var mEff = new Float64Array(N);
+
     function gravStep() {
       var n = particles.length;
-      var ax = new Array(n).fill(0);
-      var ay = new Array(n).fill(0);
+      ax.fill(0);
+      ay.fill(0);
       var Lx = bbox.x1 - bbox.x0;
       var Ly = bbox.y1 - bbox.y0;
       var hLx = Lx / 2;
@@ -215,7 +220,6 @@
       cmy /= totalM;
 
       // Effective mass: tanh ramp — particles near CoM exert less gravity
-      var mEff = new Array(n);
       for (var i = 0; i < n; i++) {
         var dcx = particles[i].x - cmx;
         var dcy = particles[i].y - cmy;
