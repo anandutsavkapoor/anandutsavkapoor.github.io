@@ -115,17 +115,17 @@
   } else {
     // ── Gravity N-body: squares in bottom-right corner ──────────────────────
     var colors = ["#00bcd4", "#e040fb", "#00bcd4", "#e040fb", "#4dd0e1", "#ce93d8"];
-    var N = 12;
-    var G = 3; // gravitational constant (px/frame units)
-    var softSq = 100; // softening ε² = 10² px — tight enough for real deflections
-    var damping = 0.998; // bleed a tiny bit of energy so system doesn't blow up
+    var N = 20; // 20 particles → 190 force pairs per frame, still trivial
+    var G = 1.5; // lower G → slower orbital speeds (v ∝ √G)
+    var softSq = 144; // softening ε² = 12² px
+    var damping = 0.9995; // near-conservative for slow, persistent orbits
     var particles = [];
     var els = [];
 
-    var cx0 = window.innerWidth * 0.75;
-    var cy0 = window.innerHeight * 0.75;
+    var cx0 = window.innerWidth * 0.72;
+    var cy0 = window.innerHeight * 0.72;
 
-    // Step 1: scatter particles randomly around the quadrant centre
+    // Step 1: scatter particles over a wider area (larger r → slower orbits, v ∝ 1/√r)
     for (var i = 0; i < N; i++) {
       var el = document.createElement("div");
       el.className = "pixel-float";
@@ -133,8 +133,8 @@
       document.body.appendChild(el);
       els.push(el);
       particles.push({
-        x: cx0 + (Math.random() - 0.5) * 260,
-        y: cy0 + (Math.random() - 0.5) * 260,
+        x: cx0 + (Math.random() - 0.5) * 380,
+        y: cy0 + (Math.random() - 0.5) * 380,
         vx: 0,
         vy: 0,
         m: 0.8 + Math.random() * 0.4,
@@ -168,8 +168,8 @@
     // Elastic bounding box — keeps simulation alive indefinitely
     function getBBox() {
       return {
-        x0: window.innerWidth * 0.35,
-        y0: window.innerHeight * 0.35,
+        x0: window.innerWidth * 0.22,
+        y0: window.innerHeight * 0.22,
         x1: window.innerWidth * 0.99,
         y1: window.innerHeight * 0.99,
       };
