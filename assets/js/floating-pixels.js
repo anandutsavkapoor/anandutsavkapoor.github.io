@@ -1,10 +1,11 @@
 (function () {
-  var isHome = window.location.pathname === "/" || window.location.pathname === "/index.html";
+  var path = window.location.pathname.replace(/\/$/, "") || "/";
+  var isHome = path === "" || path === "/" || path === "/index.html";
 
   if (isHome) {
     // ── Monte Carlo photon random walk ──────────────────────────────────────
     var canvas = document.createElement("canvas");
-    canvas.style.cssText = "position:fixed;inset:0;z-index:-1;pointer-events:none;";
+    canvas.style.cssText = "position:fixed;inset:0;z-index:99;pointer-events:none;";
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     document.body.appendChild(canvas);
