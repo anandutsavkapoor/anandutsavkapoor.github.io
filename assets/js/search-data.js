@@ -35,6 +35,21 @@ ninja.data = [{
           description: "",
           section: "Books",handler: () => {
               window.location.href = "/books/the_godfather/";
+            },},{id: "projects-boxy-dwarfs-in-perseus",
+          title: 'Boxy dwarfs in Perseus',
+          description: "Euclid Early Release Observations · galaxy morphology",
+          section: "Projects",handler: () => {
+              window.location.href = "/projects/1_perseus/";
+            },},{id: "projects-ionized-gas-emission-in-skirt",
+          title: 'Ionized gas emission in SKIRT',
+          description: "Photoionized gas · radiative transfer · IFU mock observations",
+          section: "Projects",handler: () => {
+              window.location.href = "/projects/2_dig/";
+            },},{id: "projects-toddlers-2-0",
+          title: 'TODDLERS 2.0',
+          description: "Extended star-forming region emission framework",
+          section: "Projects",handler: () => {
+              window.location.href = "/projects/3_toddlers2/";
             },},{id: "teachings-data-science-fundamentals",
           title: 'Data Science Fundamentals',
           description: "This course covers the foundational aspects of data science, including data collection, cleaning, analysis, and visualization. Students will learn practical skills for working with real-world datasets.",
