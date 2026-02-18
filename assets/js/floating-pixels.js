@@ -88,12 +88,6 @@
       },
     };
 
-    var label = document.createElement("div");
-    label.style.cssText =
-      "position:fixed;bottom:1rem;left:1rem;z-index:102;pointer-events:none;font-family:monospace;font-size:0.65rem;opacity:0.35;letter-spacing:0.05em;";
-    label.textContent = "Monte Carlo photon random walk";
-    document.body.appendChild(label);
-
     photon.reset();
     var photons = [photon];
     for (var i = 1; i < 4; i++) {
