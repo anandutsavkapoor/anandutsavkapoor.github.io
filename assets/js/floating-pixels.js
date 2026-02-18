@@ -20,8 +20,7 @@
     var colorsDark = ["#00bcd4", "#e040fb", "#4dd0e1", "#ce93d8"];
     var colorsLight = ["#0097a7", "#7b1fa2", "#00838f", "#6a1b9a"];
     function pickColor() {
-      var palette =
-        document.documentElement.getAttribute("data-theme") === "dark" ? colorsDark : colorsLight;
+      var palette = document.documentElement.getAttribute("data-theme") === "dark" ? colorsDark : colorsLight;
       return palette[Math.floor(Math.random() * palette.length)];
     }
 
