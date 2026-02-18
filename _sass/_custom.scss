@@ -45,6 +45,14 @@ html[data-theme="dark"] body::before {
   }
 }
 
+// Limit profile photo width on mobile
+@media (max-width: 575px) {
+  .profile {
+    width: 50% !important;
+    margin: 0 auto 1rem;
+  }
+}
+
 // Custom font override
 body,
 p,
