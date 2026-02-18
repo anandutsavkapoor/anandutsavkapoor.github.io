@@ -190,6 +190,10 @@
       var n = particles.length;
       var ax = new Array(n).fill(0);
       var ay = new Array(n).fill(0);
+      var Lx = bbox.x1 - bbox.x0;
+      var Ly = bbox.y1 - bbox.y0;
+      var hLx = Lx / 2;
+      var hLy = Ly / 2;
 
       // Recompute centre of mass each frame (base masses, not m_eff)
       var totalM = 0,
@@ -204,7 +208,6 @@
       cmy /= totalM;
 
       // Effective mass: tanh ramp — particles near CoM exert less gravity
-      // m_eff → 0 at centre, → m_base far away
       var mEff = new Array(n);
       for (var i = 0; i < n; i++) {
         var dcx = particles[i].x - cmx;
@@ -213,14 +216,19 @@
         mEff[i] = particles[i].m * Math.tanh(rCm / mScale);
       }
 
-      // Pairwise softened gravity — only m_eff governs outgoing attraction;
-      // inertia stays at base mass to avoid numerical blow-up near centre
+      // Pairwise softened gravity with minimum-image convention:
+      // each particle feels the nearest periodic image of every other
       for (var i = 0; i < n; i++) {
         var pi = particles[i];
         for (var j = i + 1; j < n; j++) {
           var pj = particles[j];
           var dx = pj.x - pi.x;
           var dy = pj.y - pi.y;
+          // Wrap displacement to nearest image
+          if (dx > hLx) dx -= Lx;
+          else if (dx < -hLx) dx += Lx;
+          if (dy > hLy) dy -= Ly;
+          else if (dy < -hLy) dy += Ly;
           var r2 = dx * dx + dy * dy + softSq;
           var inv_r = 1 / Math.sqrt(r2);
           var inv_r3 = inv_r * inv_r * inv_r;
@@ -237,21 +245,11 @@
         particles[i].x += particles[i].vx;
         particles[i].y += particles[i].vy;
 
-        // Elastic reflection off walls
-        if (particles[i].x < bbox.x0) {
-          particles[i].x = bbox.x0;
-          particles[i].vx = Math.abs(particles[i].vx);
-        } else if (particles[i].x > bbox.x1) {
-          particles[i].x = bbox.x1;
-          particles[i].vx = -Math.abs(particles[i].vx);
-        }
-        if (particles[i].y < bbox.y0) {
-          particles[i].y = bbox.y0;
-          particles[i].vy = Math.abs(particles[i].vy);
-        } else if (particles[i].y > bbox.y1) {
-          particles[i].y = bbox.y1;
-          particles[i].vy = -Math.abs(particles[i].vy);
-        }
+        // Periodic wrapping — particle exits one side, enters the other
+        if (particles[i].x < bbox.x0) particles[i].x += Lx;
+        else if (particles[i].x >= bbox.x1) particles[i].x -= Lx;
+        if (particles[i].y < bbox.y0) particles[i].y += Ly;
+        else if (particles[i].y >= bbox.y1) particles[i].y -= Ly;
 
         els[i].style.left = particles[i].x - 4 + "px";
         els[i].style.top = particles[i].y - 4 + "px";
