@@ -17,7 +17,13 @@
       canvas.height = window.innerHeight;
     });
 
-    var colors = ["#00bcd4", "#e040fb", "#4dd0e1", "#ce93d8"];
+    var colorsDark = ["#00bcd4", "#e040fb", "#4dd0e1", "#ce93d8"];
+    var colorsLight = ["#0097a7", "#7b1fa2", "#00838f", "#6a1b9a"];
+    function pickColor() {
+      var palette =
+        document.documentElement.getAttribute("data-theme") === "dark" ? colorsDark : colorsLight;
+      return palette[Math.floor(Math.random() * palette.length)];
+    }
 
     function drawMFP() {
       return -Math.log(Math.random() + 1e-9) * 60;
@@ -32,7 +38,7 @@
         this.dy = Math.sin(angle);
         this.mfp = drawMFP();
         this.traveled = 0;
-        this.color = colors[Math.floor(Math.random() * colors.length)];
+        this.color = pickColor();
         this.speed = 1.2 + Math.random() * 0.8;
         this.age = 0;
         this.maxAge = 500 + Math.random() * 300;
