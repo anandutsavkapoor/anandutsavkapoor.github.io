@@ -116,12 +116,15 @@
     // ── Gravity N-body: squares in bottom-right corner ──────────────────────
     var colors = ["#00bcd4", "#e040fb", "#00bcd4", "#e040fb", "#4dd0e1", "#ce93d8"];
     var N = 12;
-    var G = 4; // gravitational constant (tuned for px/frame units)
-    var softSq = 2500; // softening length² = 50² px — large so particles pass through
-    var damping = 0.999; // near-conservative: particles keep kinetic energy
-    var springK = 0.00005; // very weak spring — keeps swarm loosely on screen
+    var G = 4; // gravitational constant (px/frame units)
+    var softSq = 2500; // softening ε² = 50² px — particles pass through
+    // No damping: energy is conserved, orbits persist indefinitely
     var particles = [];
     var els = [];
+
+    // Centre of the bottom-right quadrant
+    var cx0 = window.innerWidth * 0.75;
+    var cy0 = window.innerHeight * 0.75;
 
     for (var i = 0; i < N; i++) {
       var el = document.createElement("div");
@@ -129,25 +132,43 @@
       el.style.background = colors[Math.floor(Math.random() * colors.length)];
       document.body.appendChild(el);
       els.push(el);
-      particles.push({
-        x: window.innerWidth * (0.55 + Math.random() * 0.43),
-        y: window.innerHeight * (0.52 + Math.random() * 0.46),
-        vx: (Math.random() - 0.5) * 1.6,
-        vy: (Math.random() - 0.5) * 1.6,
-        m: 0.8 + Math.random() * 0.4,
-      });
+
+      // Place on a ring with a bit of radial scatter
+      var angle = (i / N) * 2 * Math.PI + (Math.random() - 0.5) * 0.6;
+      var r = 60 + Math.random() * 80; // 60–140 px from centre
+      var x = cx0 + r * Math.cos(angle);
+      var y = cy0 + r * Math.sin(angle);
+
+      // Circular orbital speed: v = sqrt(G * (N-1) * m_avg / r)
+      // Approximation: treat all other mass as concentrated at centre
+      var vOrb = Math.sqrt((G * (N - 1)) / r);
+      // Tangential (counter-clockwise) + small radial jitter
+      var vx = -vOrb * Math.sin(angle) + (Math.random() - 0.5) * 0.2;
+      var vy = vOrb * Math.cos(angle) + (Math.random() - 0.5) * 0.2;
+
+      particles.push({ x: x, y: y, vx: vx, vy: vy, m: 1.0 });
     }
+
+    // Elastic bounding box — generous margin so orbits have room
+    function getBBox() {
+      return {
+        x0: window.innerWidth * 0.38,
+        y0: window.innerHeight * 0.38,
+        x1: window.innerWidth * 0.99,
+        y1: window.innerHeight * 0.99,
+      };
+    }
+    var bbox = getBBox();
+    window.addEventListener("resize", function () {
+      bbox = getBBox();
+    });
 
     function gravStep() {
       var n = particles.length;
-      // Anchor in the middle of the bottom-right quadrant
-      var cx = window.innerWidth * 0.77;
-      var cy = window.innerHeight * 0.75;
-
-      // Compute accelerations from old positions, then kick-drift
       var ax = new Array(n).fill(0);
       var ay = new Array(n).fill(0);
 
+      // Pairwise gravity (Newton's 3rd law, i < j)
       for (var i = 0; i < n; i++) {
         var pi = particles[i];
         for (var j = i + 1; j < n; j++) {
@@ -157,23 +178,35 @@
           var r2 = dx * dx + dy * dy + softSq;
           var inv_r = 1 / Math.sqrt(r2);
           var inv_r3 = inv_r * inv_r * inv_r;
-          // a_i += G * m_j / r³ * (r_j − r_i)
           ax[i] += G * pj.m * inv_r3 * dx;
           ay[i] += G * pj.m * inv_r3 * dy;
           ax[j] -= G * pi.m * inv_r3 * dx;
           ay[j] -= G * pi.m * inv_r3 * dy;
         }
-        // Soft spring toward cluster anchor
-        ax[i] += springK * (cx - pi.x);
-        ay[i] += springK * (cy - pi.y);
       }
 
       for (var i = 0; i < n; i++) {
-        particles[i].vx = (particles[i].vx + ax[i]) * damping;
-        particles[i].vy = (particles[i].vy + ay[i]) * damping;
+        particles[i].vx += ax[i];
+        particles[i].vy += ay[i];
         particles[i].x += particles[i].vx;
         particles[i].y += particles[i].vy;
-        // Offset by 4px to centre the 8×8 square on the particle position
+
+        // Elastic reflection — keeps simulation alive indefinitely
+        if (particles[i].x < bbox.x0) {
+          particles[i].x = bbox.x0;
+          particles[i].vx = Math.abs(particles[i].vx);
+        } else if (particles[i].x > bbox.x1) {
+          particles[i].x = bbox.x1;
+          particles[i].vx = -Math.abs(particles[i].vx);
+        }
+        if (particles[i].y < bbox.y0) {
+          particles[i].y = bbox.y0;
+          particles[i].vy = Math.abs(particles[i].vy);
+        } else if (particles[i].y > bbox.y1) {
+          particles[i].y = bbox.y1;
+          particles[i].vy = -Math.abs(particles[i].vy);
+        }
+
         els[i].style.left = particles[i].x - 4 + "px";
         els[i].style.top = particles[i].y - 4 + "px";
       }
