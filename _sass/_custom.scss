@@ -25,19 +25,22 @@ html[data-theme="dark"] body::before {
   border-radius: 1px;
 }
 
-// Footer: transparent, no box, no halo
+// Footer: transparent background, plain visible text
 footer.fixed-bottom,
 footer.sticky-bottom {
-  background: transparent !important;
+  background-color: transparent !important;
   border-top: none !important;
   box-shadow: none !important;
-  color: #111111 !important;
-  font-size: 0.85rem;
-  letter-spacing: 0.03em;
+
+  .container {
+    color: #111111 !important;
+    font-size: 0.85rem;
+    letter-spacing: 0.03em;
+  }
 }
 
-html[data-theme="dark"] footer.fixed-bottom,
-html[data-theme="dark"] footer.sticky-bottom {
+html[data-theme="dark"] footer.fixed-bottom .container,
+html[data-theme="dark"] footer.sticky-bottom .container {
   color: #eeeeee !important;
 }
 
