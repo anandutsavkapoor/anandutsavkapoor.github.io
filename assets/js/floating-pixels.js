@@ -179,12 +179,37 @@
       bbox = getBBox();
     });
 
+    var mScale = 80; // tidal stripping scale radius (px)
+
     function gravStep() {
       var n = particles.length;
       var ax = new Array(n).fill(0);
       var ay = new Array(n).fill(0);
 
-      // Pairwise softened gravity — Newton's 3rd law (i < j loop)
+      // Recompute centre of mass each frame (base masses, not m_eff)
+      var totalM = 0,
+        cmx = 0,
+        cmy = 0;
+      for (var i = 0; i < n; i++) {
+        totalM += particles[i].m;
+        cmx += particles[i].x * particles[i].m;
+        cmy += particles[i].y * particles[i].m;
+      }
+      cmx /= totalM;
+      cmy /= totalM;
+
+      // Effective mass: tanh ramp — particles near CoM exert less gravity
+      // m_eff → 0 at centre, → m_base far away
+      var mEff = new Array(n);
+      for (var i = 0; i < n; i++) {
+        var dcx = particles[i].x - cmx;
+        var dcy = particles[i].y - cmy;
+        var rCm = Math.sqrt(dcx * dcx + dcy * dcy);
+        mEff[i] = particles[i].m * Math.tanh(rCm / mScale);
+      }
+
+      // Pairwise softened gravity — only m_eff governs outgoing attraction;
+      // inertia stays at base mass to avoid numerical blow-up near centre
       for (var i = 0; i < n; i++) {
         var pi = particles[i];
         for (var j = i + 1; j < n; j++) {
@@ -194,10 +219,10 @@
           var r2 = dx * dx + dy * dy + softSq;
           var inv_r = 1 / Math.sqrt(r2);
           var inv_r3 = inv_r * inv_r * inv_r;
-          ax[i] += G * pj.m * inv_r3 * dx;
-          ay[i] += G * pj.m * inv_r3 * dy;
-          ax[j] -= G * pi.m * inv_r3 * dx;
-          ay[j] -= G * pi.m * inv_r3 * dy;
+          ax[i] += G * mEff[j] * inv_r3 * dx;
+          ay[i] += G * mEff[j] * inv_r3 * dy;
+          ax[j] -= G * mEff[i] * inv_r3 * dx;
+          ay[j] -= G * mEff[i] * inv_r3 * dy;
         }
       }
 
