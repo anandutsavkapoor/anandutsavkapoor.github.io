@@ -5,7 +5,6 @@ module.exports = {
   skippedContentGlobs: ["_site/assets/**/*.html"],
   safelist: {
     standard: [/^pixel-float/],
-    keyframes: [/^pixelFloat/],
     deep: [/^body$/],
   },
 };
