@@ -38,22 +38,6 @@ cv:
           - "Thesis: Realistic multi-wavelength mock observations for the Auriga cosmological simulations"
           - Developed TODDLERS — a UV-to-mm emission library for star-forming regions in SKIRT
 
-    Skills:
-      - name: Radiative Transfer
-        level: Expert
-        icon: fa-solid fa-star
-        keywords: "SKIRT, Monte Carlo radiative transfer, dust emission, ionized gas, emission lines"
-
-      - name: Python
-        level: Expert
-        icon: fa-solid fa-code
-        keywords: "NumPy, SciPy, Astropy, Matplotlib"
-
-      - name: Astronomy
-        level: Expert
-        icon: fa-solid fa-satellite
-        keywords: "Galaxy evolution, galaxy morphology, synthetic observations, cosmological simulations"
-
     Languages:
       - name: English
         summary: "Fluent"
