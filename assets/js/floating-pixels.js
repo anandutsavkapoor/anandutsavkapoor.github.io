@@ -116,44 +116,60 @@
     // ── Gravity N-body: squares in bottom-right corner ──────────────────────
     var colors = ["#00bcd4", "#e040fb", "#00bcd4", "#e040fb", "#4dd0e1", "#ce93d8"];
     var N = 12;
-    var G = 4; // gravitational constant (px/frame units)
-    var softSq = 2500; // softening ε² = 50² px — particles pass through
-    // No damping: energy is conserved, orbits persist indefinitely
+    var G = 3; // gravitational constant (px/frame units)
+    var softSq = 100; // softening ε² = 10² px — tight enough for real deflections
+    var damping = 0.998; // bleed a tiny bit of energy so system doesn't blow up
     var particles = [];
     var els = [];
 
-    // Centre of the bottom-right quadrant
     var cx0 = window.innerWidth * 0.75;
     var cy0 = window.innerHeight * 0.75;
 
+    // Step 1: scatter particles randomly around the quadrant centre
     for (var i = 0; i < N; i++) {
       var el = document.createElement("div");
       el.className = "pixel-float";
       el.style.background = colors[Math.floor(Math.random() * colors.length)];
       document.body.appendChild(el);
       els.push(el);
-
-      // Place on a ring with a bit of radial scatter
-      var angle = (i / N) * 2 * Math.PI + (Math.random() - 0.5) * 0.6;
-      var r = 60 + Math.random() * 80; // 60–140 px from centre
-      var x = cx0 + r * Math.cos(angle);
-      var y = cy0 + r * Math.sin(angle);
-
-      // Circular orbital speed: v = sqrt(G * (N-1) * m_avg / r)
-      // Approximation: treat all other mass as concentrated at centre
-      var vOrb = Math.sqrt((G * (N - 1)) / r);
-      // Tangential (counter-clockwise) + small radial jitter
-      var vx = -vOrb * Math.sin(angle) + (Math.random() - 0.5) * 0.2;
-      var vy = vOrb * Math.cos(angle) + (Math.random() - 0.5) * 0.2;
-
-      particles.push({ x: x, y: y, vx: vx, vy: vy, m: 1.0 });
+      particles.push({
+        x: cx0 + (Math.random() - 0.5) * 260,
+        y: cy0 + (Math.random() - 0.5) * 260,
+        vx: 0,
+        vy: 0,
+        m: 0.8 + Math.random() * 0.4,
+      });
     }
 
-    // Elastic bounding box — generous margin so orbits have room
+    // Step 2: compute centre of mass, then give each particle the
+    // tangential velocity for a circular orbit around the CoM.
+    // v = sqrt(G * M_total / r) * 0.7  (0.7 corrects for distributed mass)
+    var totalM = 0,
+      cmx = 0,
+      cmy = 0;
+    for (var i = 0; i < N; i++) {
+      totalM += particles[i].m;
+      cmx += particles[i].x * particles[i].m;
+      cmy += particles[i].y * particles[i].m;
+    }
+    cmx /= totalM;
+    cmy /= totalM;
+
+    for (var i = 0; i < N; i++) {
+      var dx = particles[i].x - cmx;
+      var dy = particles[i].y - cmy;
+      var r = Math.sqrt(dx * dx + dy * dy) + 1;
+      var vOrb = Math.sqrt((G * totalM) / r) * 0.7;
+      // Counter-clockwise tangent + small radial scatter for ellipticity
+      particles[i].vx = (-vOrb * dy) / r + (Math.random() - 0.5) * 0.25;
+      particles[i].vy = (vOrb * dx) / r + (Math.random() - 0.5) * 0.25;
+    }
+
+    // Elastic bounding box — keeps simulation alive indefinitely
     function getBBox() {
       return {
-        x0: window.innerWidth * 0.38,
-        y0: window.innerHeight * 0.38,
+        x0: window.innerWidth * 0.35,
+        y0: window.innerHeight * 0.35,
         x1: window.innerWidth * 0.99,
         y1: window.innerHeight * 0.99,
       };
@@ -168,7 +184,7 @@
       var ax = new Array(n).fill(0);
       var ay = new Array(n).fill(0);
 
-      // Pairwise gravity (Newton's 3rd law, i < j)
+      // Pairwise softened gravity — Newton's 3rd law (i < j loop)
       for (var i = 0; i < n; i++) {
         var pi = particles[i];
         for (var j = i + 1; j < n; j++) {
@@ -186,12 +202,12 @@
       }
 
       for (var i = 0; i < n; i++) {
-        particles[i].vx += ax[i];
-        particles[i].vy += ay[i];
+        particles[i].vx = (particles[i].vx + ax[i]) * damping;
+        particles[i].vy = (particles[i].vy + ay[i]) * damping;
         particles[i].x += particles[i].vx;
         particles[i].y += particles[i].vy;
 
-        // Elastic reflection — keeps simulation alive indefinitely
+        // Elastic reflection off walls
         if (particles[i].x < bbox.x0) {
           particles[i].x = bbox.x0;
           particles[i].vx = Math.abs(particles[i].vx);
