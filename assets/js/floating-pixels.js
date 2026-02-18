@@ -57,7 +57,7 @@
         ctx.moveTo(prevX, prevY);
         ctx.lineTo(this.x, this.y);
         ctx.strokeStyle = this.color;
-        ctx.lineWidth = 1;
+        ctx.lineWidth = 1.8;
         ctx.globalAlpha = opacity;
         ctx.stroke();
 
@@ -95,7 +95,7 @@
     function animate() {
       // Fade trails to transparent so the grid behind stays visible
       ctx.globalCompositeOperation = "destination-out";
-      ctx.fillStyle = "rgba(0,0,0,0.1)";
+      ctx.fillStyle = "rgba(0,0,0,0.04)";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.globalCompositeOperation = "source-over";
 
