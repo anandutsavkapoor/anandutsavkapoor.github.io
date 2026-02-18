@@ -11,7 +11,7 @@ profile:
   more_info: >
     <p>Dept. of Physics and Astronomy</p>
     <p>Ghent University</p>
-    <p>Gent, Belgium</p>
+    <p>Ghent, Belgium</p>
 
 selected_papers: true # includes a list of papers marked as "selected={true}"
 social: true # includes social icons at the bottom of the page
