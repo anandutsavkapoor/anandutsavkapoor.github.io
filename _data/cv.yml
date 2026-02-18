@@ -12,7 +12,7 @@ cv:
 
   address:
     city: Ghent
-    countryCode: BE
+    region: Belgium
 
   sections:
     Experience:
