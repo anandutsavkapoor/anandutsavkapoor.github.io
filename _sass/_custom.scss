@@ -1,32 +1,17 @@
-// Floating pixel background
-.pixel-float {
+// Subtle background grid
+body::before {
+  content: "";
   position: fixed;
-  width: 8px;
-  height: 8px;
-  opacity: 0.45;
+  inset: 0;
+  background-image: linear-gradient(rgba(0, 0, 0, 0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 0, 0, 0.06) 1px, transparent 1px);
+  background-size: 40px 40px;
   z-index: 0;
   pointer-events: none;
-  border-radius: 1px;
 }
 
-@keyframes pixelFloat {
-  0%,
-  100% {
-    transform: translateY(0) rotate(0deg);
-    opacity: 0.45;
-  }
-  25% {
-    transform: translateY(-28px) rotate(90deg);
-    opacity: 0.2;
-  }
-  50% {
-    transform: translateY(-10px) rotate(180deg);
-    opacity: 0.6;
-  }
-  75% {
-    transform: translateY(-38px) rotate(270deg);
-    opacity: 0.3;
-  }
+html[data-theme="dark"] body::before {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
 }
 
 // Custom font override
