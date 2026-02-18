@@ -1,5 +1,7 @@
-// Subtle background grid (on html so canvas z-index:-1 works)
+// Move page background to html so body can be transparent,
+// allowing the grid and canvas (z-index:-1) to show through.
 html {
+  background-color: var(--global-bg-color, #fff);
   background-image: linear-gradient(rgba(0, 0, 0, 0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 0, 0, 0.07) 1px, transparent 1px);
   background-size: 24px 24px;
 }
@@ -7,6 +9,10 @@ html {
 html[data-theme="dark"] {
   background-image:
     linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+}
+
+body {
+  background: transparent !important;
 }
 
 // Floating pixels
