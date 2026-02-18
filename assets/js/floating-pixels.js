@@ -118,7 +118,7 @@
 
     animate();
   } else {
-    // ── Gravity N-body: squares in bottom-right corner ──────────────────────
+    // ── Gravity N-body: region varies per page to avoid text ────────────────
     var colors = ["#00bcd4", "#e040fb", "#00bcd4", "#e040fb", "#4dd0e1", "#ce93d8"];
     var N = 20; // 20 particles → 190 force pairs per frame, still trivial
     var G = 1.5; // lower G → slower orbital speeds (v ∝ √G)
@@ -127,10 +127,40 @@
     var particles = [];
     var els = [];
 
-    var cx0 = window.innerWidth * 0.72;
-    var cy0 = window.innerHeight * 0.72;
+    // Per-page bbox fractions — chosen to stay in margins / below content.
+    // publications: right gutter + lower half (bibliography is a centred column)
+    // projects:     bottom-right quadrant (cards don't reach full width/height)
+    // cv:           right strip, full height (CV is a narrow centred column)
+    // default:      generous bottom-right area
+    var pageCfgs = {
+      "/publications/": { x0: 0.62, y0: 0.5, x1: 0.99, y1: 0.99 },
+      "/projects/": { x0: 0.55, y0: 0.52, x1: 0.99, y1: 0.99 },
+      "/cv/": { x0: 0.68, y0: 0.1, x1: 0.99, y1: 0.9 },
+    };
+    var cfg = pageCfgs[path] || { x0: 0.22, y0: 0.22, x1: 0.99, y1: 0.99 };
 
-    // Step 1: scatter particles over a wider area (larger r → slower orbits, v ∝ 1/√r)
+    function getBBox() {
+      return {
+        x0: window.innerWidth * cfg.x0,
+        y0: window.innerHeight * cfg.y0,
+        x1: window.innerWidth * cfg.x1,
+        y1: window.innerHeight * cfg.y1,
+      };
+    }
+    var bbox = getBBox();
+    window.addEventListener("resize", function () {
+      bbox = getBBox();
+    });
+
+    // Centre initial scatter on the midpoint of the chosen bbox
+    var initBBox = getBBox();
+    var cx0 = (initBBox.x0 + initBBox.x1) / 2;
+    var cy0 = (initBBox.y0 + initBBox.y1) / 2;
+    // Scatter up to 45% of bbox half-width/height so particles start inside
+    var scatterX = (initBBox.x1 - initBBox.x0) * 0.45;
+    var scatterY = (initBBox.y1 - initBBox.y0) * 0.45;
+
+    // Step 1: scatter particles within the page-specific region
     for (var i = 0; i < N; i++) {
       var el = document.createElement("div");
       el.className = "pixel-float";
@@ -138,17 +168,15 @@
       document.body.appendChild(el);
       els.push(el);
       particles.push({
-        x: cx0 + (Math.random() - 0.5) * 380,
-        y: cy0 + (Math.random() - 0.5) * 380,
+        x: cx0 + (Math.random() - 0.5) * 2 * scatterX,
+        y: cy0 + (Math.random() - 0.5) * 2 * scatterY,
         vx: 0,
         vy: 0,
         m: 0.8 + Math.random() * 0.4,
       });
     }
 
-    // Step 2: compute centre of mass, then give each particle the
-    // tangential velocity for a circular orbit around the CoM.
-    // v = sqrt(G * M_total / r) * 0.7  (0.7 corrects for distributed mass)
+    // Step 2: compute CoM, give each particle tangential orbital velocity
     var totalM = 0,
       cmx = 0,
       cmy = 0;
@@ -165,24 +193,9 @@
       var dy = particles[i].y - cmy;
       var r = Math.sqrt(dx * dx + dy * dy) + 1;
       var vOrb = Math.sqrt((G * totalM) / r) * 0.7;
-      // Counter-clockwise tangent + small radial scatter for ellipticity
       particles[i].vx = (-vOrb * dy) / r + (Math.random() - 0.5) * 0.25;
       particles[i].vy = (vOrb * dx) / r + (Math.random() - 0.5) * 0.25;
     }
-
-    // Elastic bounding box — keeps simulation alive indefinitely
-    function getBBox() {
-      return {
-        x0: window.innerWidth * 0.22,
-        y0: window.innerHeight * 0.22,
-        x1: window.innerWidth * 0.99,
-        y1: window.innerHeight * 0.99,
-      };
-    }
-    var bbox = getBBox();
-    window.addEventListener("resize", function () {
-      bbox = getBBox();
-    });
 
     var mScale = 80; // tidal stripping scale radius (px)
 
