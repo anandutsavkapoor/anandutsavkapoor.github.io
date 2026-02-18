@@ -84,6 +84,13 @@
     };
 
     photon.reset();
+    var photons = [photon];
+    for (var i = 1; i < 4; i++) {
+      var p = Object.assign({}, photon);
+      p.reset();
+      p.age = Math.floor(Math.random() * p.maxAge);
+      photons.push(p);
+    }
 
     function animate() {
       // Fade trails to transparent so the grid behind stays visible
@@ -92,7 +99,9 @@
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.globalCompositeOperation = "source-over";
 
-      photon.step();
+      for (var i = 0; i < photons.length; i++) {
+        photons[i].step();
+      }
       requestAnimationFrame(animate);
     }
 
