@@ -31,14 +31,14 @@ footer.sticky-bottom {
   background: transparent !important;
   border-top: none !important;
   box-shadow: none !important;
-  color: rgba(100, 100, 100, 0.6);
+  color: rgba(60, 60, 60, 0.9);
   font-size: 0.85rem;
   letter-spacing: 0.03em;
 }
 
 html[data-theme="dark"] footer.fixed-bottom,
 html[data-theme="dark"] footer.sticky-bottom {
-  color: rgba(200, 200, 200, 0.45);
+  color: rgba(220, 220, 220, 0.85);
 }
 
 // Limit profile photo width on mobile
