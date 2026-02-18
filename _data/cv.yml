@@ -2,7 +2,7 @@ cv:
   name: Anand Utsav Kapoor
   label: Postdoctoral Researcher in Astrophysics
   email: anand.kapoor@ugent.be
-  location: Gent, Belgium
+  location: Ghent, Belgium
   image: ""
   summary: Postdoctoral researcher at Ghent University, working on galaxy evolution, radiative transfer, and galaxy morphology with Euclid.
 
@@ -11,14 +11,14 @@ cv:
       username: anandutsavkapoor
 
   address:
-    city: Gent
+    city: Ghent
     countryCode: BE
 
   sections:
     Experience:
       - company: Ghent University
         position: Postdoctoral Researcher
-        location: Gent, Belgium
+        location: Ghent, Belgium
         url: https://www.ugent.be/
         start_date: 2023
         end_date: present
@@ -28,7 +28,7 @@ cv:
 
     Education:
       - institution: Ghent University
-        location: Gent, Belgium
+        location: Ghent, Belgium
         url: https://www.ugent.be/
         area: Astrophysics
         studyType: PhD
