@@ -25,6 +25,22 @@ html[data-theme="dark"] body::before {
   border-radius: 1px;
 }
 
+// Footer: transparent, no border, muted text sitting on top of the page
+footer.fixed-bottom,
+footer.sticky-bottom {
+  background: transparent !important;
+  border-top: none !important;
+  box-shadow: none !important;
+  color: rgba(100, 100, 100, 0.6);
+  font-size: 0.7rem;
+  letter-spacing: 0.03em;
+}
+
+html[data-theme="dark"] footer.fixed-bottom,
+html[data-theme="dark"] footer.sticky-bottom {
+  color: rgba(200, 200, 200, 0.45);
+}
+
 // Limit profile photo width on mobile
 @media (max-width: 575px) {
   .profile {
