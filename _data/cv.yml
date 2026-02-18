@@ -45,5 +45,8 @@ cv:
       - name: Hindi
         summary: "Native speaker"
 
+      - name: Punjabi
+        summary: "Native speaker"
+
       - name: French
         summary: "Basic"
