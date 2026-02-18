@@ -1,3 +1,34 @@
+// Floating pixel background
+.pixel-float {
+  position: fixed;
+  width: 8px;
+  height: 8px;
+  opacity: 0.45;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: 1px;
+}
+
+@keyframes pixelFloat {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0.45;
+  }
+  25% {
+    transform: translateY(-28px) rotate(90deg);
+    opacity: 0.2;
+  }
+  50% {
+    transform: translateY(-10px) rotate(180deg);
+    opacity: 0.6;
+  }
+  75% {
+    transform: translateY(-38px) rotate(270deg);
+    opacity: 0.3;
+  }
+}
+
 // Custom font override
 body,
 p,
