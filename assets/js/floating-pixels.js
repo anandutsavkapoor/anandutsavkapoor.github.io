@@ -116,10 +116,10 @@
     // ── Gravity N-body: squares in bottom-right corner ──────────────────────
     var colors = ["#00bcd4", "#e040fb", "#00bcd4", "#e040fb", "#4dd0e1", "#ce93d8"];
     var N = 12;
-    var G = 6; // gravitational constant (tuned for px/frame units)
-    var softSq = 625; // softening length² = 25² px — prevents singularities
-    var damping = 0.985; // velocity damping per frame
-    var springK = 0.0003; // spring constant pulling toward cluster centre
+    var G = 4; // gravitational constant (tuned for px/frame units)
+    var softSq = 2500; // softening length² = 50² px — large so particles pass through
+    var damping = 0.999; // near-conservative: particles keep kinetic energy
+    var springK = 0.00005; // very weak spring — keeps swarm loosely on screen
     var particles = [];
     var els = [];
 
@@ -130,19 +130,19 @@
       document.body.appendChild(el);
       els.push(el);
       particles.push({
-        x: window.innerWidth * (0.78 + Math.random() * 0.2),
-        y: window.innerHeight * (0.75 + Math.random() * 0.22),
-        vx: (Math.random() - 0.5) * 1.2,
-        vy: (Math.random() - 0.5) * 1.2,
+        x: window.innerWidth * (0.55 + Math.random() * 0.43),
+        y: window.innerHeight * (0.52 + Math.random() * 0.46),
+        vx: (Math.random() - 0.5) * 1.6,
+        vy: (Math.random() - 0.5) * 1.6,
         m: 0.8 + Math.random() * 0.4,
       });
     }
 
     function gravStep() {
       var n = particles.length;
-      // Cluster anchor drifts gently with window size
-      var cx = window.innerWidth * 0.89;
-      var cy = window.innerHeight * 0.87;
+      // Anchor in the middle of the bottom-right quadrant
+      var cx = window.innerWidth * 0.77;
+      var cy = window.innerHeight * 0.75;
 
       // Compute accelerations from old positions, then kick-drift
       var ax = new Array(n).fill(0);
