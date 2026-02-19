@@ -203,13 +203,11 @@
     // Collapse threshold: 90th-percentile radius must be below this (stricter than RMS)
     var collapseThreshold = Math.min(scatterX, scatterY) * 0.28;
     var feedbackKick = 1.4; // speed injected per particle (px/frame)
-    var tangentialFrac = 0.35; // fraction of kick that is tangential (spin-up vs radial)
     var maxSpeed = 3.5; // px/frame — cap post-kick velocity so nothing escapes bbox
     var pendingKicks = []; // [{idx, delay}] — wave-front queue
     var pendingKickFrame = 0;
     var kickCmx = 0,
-      kickCmy = 0,
-      kickSpinSign = 1; // frozen at collapse event
+      kickCmy = 0; // frozen at collapse event
 
     function gravStep() {
       var n = particles.length;
@@ -250,14 +248,6 @@
         var p90r = dists[Math.floor(n * 0.9)].r;
 
         if (p90r < collapseThreshold) {
-          // Measure net angular momentum so kicks respect the system's existing spin
-          var Lz = 0;
-          for (var i = 0; i < n; i++) {
-            var dcx = particles[i].x - cmx;
-            var dcy = particles[i].y - cmy;
-            Lz += particles[i].m * (dcx * particles[i].vy - dcy * particles[i].vx);
-          }
-          kickSpinSign = Lz >= 0 ? 1 : -1;
           kickCmx = cmx;
           kickCmy = cmy;
           // Queue kicks closest-first — one per frame so the burst propagates outward
@@ -289,12 +279,10 @@
               rx = dcx / rc;
               ry = dcy / rc;
             }
-            var tx = -kickSpinSign * ry; // tangential unit vector (perpendicular to radial)
-            var ty = kickSpinSign * rx;
             // Kick falls off with distance: full strength at CoM, ~half at collapseThreshold
             var kickScale = collapseThreshold / (rc + collapseThreshold);
-            particles[i].vx += feedbackKick * kickScale * ((1 - tangentialFrac) * rx + tangentialFrac * tx);
-            particles[i].vy += feedbackKick * kickScale * ((1 - tangentialFrac) * ry + tangentialFrac * ty);
+            particles[i].vx += feedbackKick * kickScale * rx;
+            particles[i].vy += feedbackKick * kickScale * ry;
             var sp = Math.sqrt(particles[i].vx * particles[i].vx + particles[i].vy * particles[i].vy);
             if (sp > maxSpeed) {
               particles[i].vx = (particles[i].vx / sp) * maxSpeed;
