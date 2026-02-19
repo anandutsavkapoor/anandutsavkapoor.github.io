@@ -134,13 +134,12 @@
       bbox = getBBox();
     });
 
-    // Centre initial scatter on the midpoint of the chosen bbox
-    var initBBox = getBBox();
-    var cx0 = (initBBox.x0 + initBBox.x1) / 2;
-    var cy0 = (initBBox.y0 + initBBox.y1) / 2;
-    // Scatter up to 45% of bbox half-width/height so particles start inside
-    var scatterX = (initBBox.x1 - initBBox.x0) * 0.45;
-    var scatterY = (initBBox.y1 - initBBox.y0) * 0.45;
+    // Seed the cluster right-of-centre — clear of text (left column) and viewport edges.
+    // CoM velocity is zeroed every frame so the structure stays near this point.
+    var cx0 = window.innerWidth * 0.72;
+    var cy0 = window.innerHeight * 0.5;
+    var scatterX = window.innerWidth * 0.18; // compact enough to stay away from edges
+    var scatterY = window.innerHeight * 0.22;
 
     // Step 1: scatter particles within the page-specific region
     for (var i = 0; i < N; i++) {
