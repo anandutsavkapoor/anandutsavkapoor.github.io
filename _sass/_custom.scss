@@ -25,18 +25,32 @@ html[data-theme="dark"] body::before {
   border-radius: 1px;
 }
 
-// Footer: transparent background, plain visible text
+// Footer: fixed to the right edge, text runs upward
 footer.fixed-bottom,
 footer.sticky-bottom {
   background-color: transparent !important;
-  border-top: none !important;
+  border: none !important;
   box-shadow: none !important;
+  // Override Bootstrap's bottom-spanning positioning
+  position: fixed !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  left: auto !important;
+  right: 0.4rem !important;
+  width: auto !important;
+  display: flex !important;
+  align-items: center !important;
 
   .container {
     color: #111111 !important;
-    font-size: 0.85rem;
-    letter-spacing: 0.03em;
-    text-align: right !important;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    white-space: nowrap;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg); // read bottom-to-top
+    padding: 0 !important;
+    max-width: none !important;
+    margin: 0 !important;
   }
 }
 
