@@ -187,7 +187,7 @@
     var feedbackCooldownMax = 420; // ~7 s at 60 fps before next allowed event
     // Collapse threshold: 90th-percentile radius must be below this (stricter than RMS)
     var collapseThreshold = Math.min(scatterX, scatterY) * 0.28;
-    var feedbackKick = 1.25; // speed injected per particle (px/frame)
+    var feedbackKick = 1.5; // speed injected per particle (px/frame)
     var maxSpeed = 3.5; // px/frame — cap post-kick velocity so nothing escapes bbox
     var pendingKicks = []; // [{idx, delay}] — wave-front queue
     var pendingKickFrame = 0;
