@@ -320,6 +320,21 @@
       for (var i = 0; i < n; i++) {
         particles[i].vx = (particles[i].vx + ax[i]) * damping;
         particles[i].vy = (particles[i].vy + ay[i]) * damping;
+      }
+
+      // Remove net CoM velocity every frame — gravity is momentum-conserving but
+      // feedback kicks are not, so without this the CoM drifts after each event
+      var vcmx = 0,
+        vcmy = 0;
+      for (var i = 0; i < n; i++) {
+        vcmx += particles[i].m * particles[i].vx;
+        vcmy += particles[i].m * particles[i].vy;
+      }
+      vcmx /= totalM;
+      vcmy /= totalM;
+      for (var i = 0; i < n; i++) {
+        particles[i].vx -= vcmx;
+        particles[i].vy -= vcmy;
         particles[i].x += particles[i].vx;
         particles[i].y += particles[i].vy;
 
