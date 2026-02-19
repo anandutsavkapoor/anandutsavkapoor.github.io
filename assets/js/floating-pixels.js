@@ -193,6 +193,7 @@
     var pendingKickFrame = 0;
     var kickCmx = 0,
       kickCmy = 0; // frozen at collapse event
+    var particleOpacity = 0.45; // fades to 0 on snap, recovers over ~40 frames
 
     function gravStep() {
       var n = particles.length;
@@ -241,6 +242,7 @@
           }
           kickCmx = cx0;
           kickCmy = cy0;
+          particleOpacity = 0; // dim to invisible; fades back in during burst
           // Queue kicks closest-first — one per frame so the burst propagates outward
           pendingKicks = dists.map(function (d, rank) {
             return { idx: d.idx, delay: rank };
@@ -323,6 +325,8 @@
       }
       vcmx /= totalM;
       vcmy /= totalM;
+      // Fade opacity back to 0.45 after a snap event (~40 frames = 0.7 s)
+      if (particleOpacity < 0.45) particleOpacity = Math.min(0.45, particleOpacity + 0.45 / 40);
       for (var i = 0; i < n; i++) {
         particles[i].vx -= vcmx;
         particles[i].vy -= vcmy;
@@ -337,6 +341,7 @@
 
         els[i].style.left = particles[i].x - 2.5 + "px";
         els[i].style.top = particles[i].y - 2.5 + "px";
+        els[i].style.opacity = particleOpacity;
       }
 
       requestAnimationFrame(gravStep);
