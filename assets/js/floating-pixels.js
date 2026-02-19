@@ -278,13 +278,23 @@
             var i = pk.idx;
             var dcx = particles[i].x - kickCmx;
             var dcy = particles[i].y - kickCmy;
-            var rc = Math.sqrt(dcx * dcx + dcy * dcy) + 1;
-            var rx = dcx / rc;
-            var ry = dcy / rc;
+            var rc = Math.sqrt(dcx * dcx + dcy * dcy);
+            // True unit vector; random direction for any particle sitting exactly at CoM
+            var rx, ry;
+            if (rc < 1) {
+              var ang = Math.random() * Math.PI * 2;
+              rx = Math.cos(ang);
+              ry = Math.sin(ang);
+            } else {
+              rx = dcx / rc;
+              ry = dcy / rc;
+            }
             var tx = -kickSpinSign * ry; // tangential unit vector (perpendicular to radial)
             var ty = kickSpinSign * rx;
-            particles[i].vx += feedbackKick * ((1 - tangentialFrac) * rx + tangentialFrac * tx);
-            particles[i].vy += feedbackKick * ((1 - tangentialFrac) * ry + tangentialFrac * ty);
+            // Kick falls off with distance: full strength at CoM, ~half at collapseThreshold
+            var kickScale = collapseThreshold / (rc + collapseThreshold);
+            particles[i].vx += feedbackKick * kickScale * ((1 - tangentialFrac) * rx + tangentialFrac * tx);
+            particles[i].vy += feedbackKick * kickScale * ((1 - tangentialFrac) * ry + tangentialFrac * ty);
             var sp = Math.sqrt(particles[i].vx * particles[i].vx + particles[i].vy * particles[i].vy);
             if (sp > maxSpeed) {
               particles[i].vx = (particles[i].vx / sp) * maxSpeed;
