@@ -232,17 +232,25 @@
         var p90r = dists[Math.floor(n * 0.9)].r;
 
         if (p90r < collapseThreshold) {
-          // Snap the collapsed cluster back to the seed point — invisible because
-          // the system is already a tight ball, and gives a clean burst origin
-          var shiftX = cx0 - cmx;
-          var shiftY = cy0 - cmy;
-          for (var i = 0; i < n; i++) {
-            particles[i].x += shiftX;
-            particles[i].y += shiftY;
+          // Only snap to seed point if the galaxy has drifted close to a viewport edge.
+          // In normal operation (galaxy stays near cx0/cy0) no snap occurs and the
+          // burst radiates from wherever the collapse actually happened.
+          var edgeMargin = Math.min(bbox.x1, bbox.y1) * 0.12;
+          var nearEdge = cmx < edgeMargin || cmx > bbox.x1 - edgeMargin || cmy < edgeMargin || cmy > bbox.y1 - edgeMargin;
+          if (nearEdge) {
+            var shiftX = cx0 - cmx;
+            var shiftY = cy0 - cmy;
+            for (var i = 0; i < n; i++) {
+              particles[i].x += shiftX;
+              particles[i].y += shiftY;
+            }
+            kickCmx = cx0;
+            kickCmy = cy0;
+            particleOpacity = 0; // fade out to mask the snap, recover during burst
+          } else {
+            kickCmx = cmx;
+            kickCmy = cmy;
           }
-          kickCmx = cx0;
-          kickCmy = cy0;
-          particleOpacity = 0; // dim to invisible; fades back in during burst
           // Queue kicks closest-first — one per frame so the burst propagates outward
           pendingKicks = dists.map(function (d, rank) {
             return { idx: d.idx, delay: rank };
