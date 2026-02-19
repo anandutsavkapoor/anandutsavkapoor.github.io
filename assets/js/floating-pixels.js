@@ -185,8 +185,6 @@
     // Feedback parameters — fires when the system collapses into a tight cluster
     var feedbackCooldown = 0; // frames remaining before feedback can fire again
     var feedbackCooldownMax = 420; // ~7 s at 60 fps before next allowed event
-    var feedbackCheckInterval = 30; // re-evaluate clustering every 30 frames
-    var feedbackFrame = 0;
     // Collapse threshold: 90th-percentile radius must be below this (stricter than RMS)
     var collapseThreshold = Math.min(scatterX, scatterY) * 0.28;
     var feedbackKick = 1.25; // speed injected per particle (px/frame)
@@ -217,12 +215,10 @@
       cmx /= totalM;
       cmy /= totalM;
 
-      // Periodically check for galaxy collapse and fire feedback if due
-      feedbackFrame++;
-      if (feedbackCooldown > 0) feedbackCooldown--;
-      if (feedbackFrame % feedbackCheckInterval === 0 && feedbackCooldown === 0) {
-        // Sort particles by distance from CoM — require 90th percentile inside threshold
-        // so the whole population must have collapsed, not just the average
+      // Check for galaxy collapse every frame — fires the instant the system collapses
+      if (feedbackCooldown > 0) {
+        feedbackCooldown--;
+      } else {
         var dists = [];
         for (var i = 0; i < n; i++) {
           var dcx = particles[i].x - cmx;
@@ -235,8 +231,16 @@
         var p90r = dists[Math.floor(n * 0.9)].r;
 
         if (p90r < collapseThreshold) {
-          kickCmx = cmx;
-          kickCmy = cmy;
+          // Snap the collapsed cluster back to the seed point — invisible because
+          // the system is already a tight ball, and gives a clean burst origin
+          var shiftX = cx0 - cmx;
+          var shiftY = cy0 - cmy;
+          for (var i = 0; i < n; i++) {
+            particles[i].x += shiftX;
+            particles[i].y += shiftY;
+          }
+          kickCmx = cx0;
+          kickCmy = cy0;
           // Queue kicks closest-first — one per frame so the burst propagates outward
           pendingKicks = dists.map(function (d, rank) {
             return { idx: d.idx, delay: rank };
