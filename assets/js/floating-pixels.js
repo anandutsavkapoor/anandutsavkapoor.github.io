@@ -114,7 +114,7 @@
   } else {
     // ── Gravity N-body: region varies per page to avoid text ────────────────
     var colors = ["#00bcd4", "#e040fb", "#00bcd4", "#e040fb", "#4dd0e1", "#ce93d8"];
-    var N = 50; // 50 particles → 1225 force pairs per frame
+    var N = 100; // 100 particles → 4950 force pairs per frame
     var G = 1.5; // lower G → slower orbital speeds (v ∝ √G)
     var softSq = 144; // softening ε² = 12² px
     var damping = 0.9995; // near-conservative for slow, persistent orbits
@@ -179,8 +179,8 @@
     }
 
     // Pre-allocate acceleration arrays — avoids GC every frame
-    var ax = new Float64Array(N);
-    var ay = new Float64Array(N);
+    var ax = new Float32Array(N);
+    var ay = new Float32Array(N);
 
     // Feedback parameters — fires when the system collapses into a tight cluster
     var feedbackCooldown = 0; // frames remaining before feedback can fire again
