@@ -191,12 +191,9 @@
       particles[i].vy = (vOrb * dx) / r + (Math.random() - 0.5) * 0.25;
     }
 
-    var mScale = 80; // tidal stripping scale radius (px)
-
-    // Pre-allocate acceleration and effective-mass arrays — avoids GC every frame
+    // Pre-allocate acceleration arrays — avoids GC every frame
     var ax = new Float64Array(N);
     var ay = new Float64Array(N);
-    var mEff = new Float64Array(N);
 
     function gravStep() {
       var n = particles.length;
@@ -207,35 +204,13 @@
       var hLx = Lx / 2;
       var hLy = Ly / 2;
 
-      // Recompute centre of mass each frame (base masses, not m_eff)
-      var totalM = 0,
-        cmx = 0,
-        cmy = 0;
-      for (var i = 0; i < n; i++) {
-        totalM += particles[i].m;
-        cmx += particles[i].x * particles[i].m;
-        cmy += particles[i].y * particles[i].m;
-      }
-      cmx /= totalM;
-      cmy /= totalM;
-
-      // Effective mass: tanh ramp — particles near CoM exert less gravity
-      for (var i = 0; i < n; i++) {
-        var dcx = particles[i].x - cmx;
-        var dcy = particles[i].y - cmy;
-        var rCm = Math.sqrt(dcx * dcx + dcy * dcy);
-        mEff[i] = particles[i].m * Math.tanh(rCm / mScale);
-      }
-
-      // Pairwise softened gravity with minimum-image convention:
-      // each particle feels the nearest periodic image of every other
+      // Pairwise softened gravity with minimum-image convention
       for (var i = 0; i < n; i++) {
         var pi = particles[i];
         for (var j = i + 1; j < n; j++) {
           var pj = particles[j];
           var dx = pj.x - pi.x;
           var dy = pj.y - pi.y;
-          // Wrap displacement to nearest image
           if (dx > hLx) dx -= Lx;
           else if (dx < -hLx) dx += Lx;
           if (dy > hLy) dy -= Ly;
@@ -243,10 +218,10 @@
           var r2 = dx * dx + dy * dy + softSq;
           var inv_r = 1 / Math.sqrt(r2);
           var inv_r3 = inv_r * inv_r * inv_r;
-          ax[i] += G * mEff[j] * inv_r3 * dx;
-          ay[i] += G * mEff[j] * inv_r3 * dy;
-          ax[j] -= G * mEff[i] * inv_r3 * dx;
-          ay[j] -= G * mEff[i] * inv_r3 * dy;
+          ax[i] += G * pj.m * inv_r3 * dx;
+          ay[i] += G * pj.m * inv_r3 * dy;
+          ax[j] -= G * pi.m * inv_r3 * dx;
+          ay[j] -= G * pi.m * inv_r3 * dy;
         }
       }
 
@@ -262,8 +237,8 @@
         if (particles[i].y < bbox.y0) particles[i].y += Ly;
         else if (particles[i].y >= bbox.y1) particles[i].y -= Ly;
 
-        els[i].style.left = particles[i].x - 4 + "px";
-        els[i].style.top = particles[i].y - 4 + "px";
+        els[i].style.left = particles[i].x - 2.5 + "px";
+        els[i].style.top = particles[i].y - 2.5 + "px";
       }
 
       requestAnimationFrame(gravStep);
