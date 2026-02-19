@@ -200,9 +200,16 @@
     var feedbackCooldownMax = 420; // ~7 s at 60 fps before next allowed event
     var feedbackCheckInterval = 30; // re-evaluate clustering every 30 frames
     var feedbackFrame = 0;
-    // Collapse threshold: RMS radius < this fraction of initial scatter triggers feedback
+    // Collapse threshold: 90th-percentile radius must be below this (stricter than RMS)
     var collapseThreshold = Math.min(scatterX, scatterY) * 0.28;
-    var feedbackKick = 1.4; // radial speed injected per particle (px/frame)
+    var feedbackKick = 1.4; // speed injected per particle (px/frame)
+    var tangentialFrac = 0.35; // fraction of kick that is tangential (spin-up vs radial)
+    var maxSpeed = 3.5; // px/frame — cap post-kick velocity so nothing escapes bbox
+    var pendingKicks = []; // [{idx, delay}] — wave-front queue
+    var pendingKickFrame = 0;
+    var kickCmx = 0,
+      kickCmy = 0,
+      kickSpinSign = 1; // frozen at collapse event
 
     function gravStep() {
       var n = particles.length;
@@ -229,26 +236,66 @@
       feedbackFrame++;
       if (feedbackCooldown > 0) feedbackCooldown--;
       if (feedbackFrame % feedbackCheckInterval === 0 && feedbackCooldown === 0) {
-        // RMS radius from CoM
-        var rms = 0;
+        // Sort particles by distance from CoM — require 90th percentile inside threshold
+        // so the whole population must have collapsed, not just the average
+        var dists = [];
         for (var i = 0; i < n; i++) {
           var dcx = particles[i].x - cmx;
           var dcy = particles[i].y - cmy;
-          rms += dcx * dcx + dcy * dcy;
+          dists.push({ idx: i, r: Math.sqrt(dcx * dcx + dcy * dcy) });
         }
-        rms = Math.sqrt(rms / n);
+        dists.sort(function (a, b) {
+          return a.r - b.r;
+        });
+        var p90r = dists[Math.floor(n * 0.9)].r;
 
-        if (rms < collapseThreshold) {
-          // Feedback: radial velocity kick outward from CoM (supernova/AGN-like)
+        if (p90r < collapseThreshold) {
+          // Measure net angular momentum so kicks respect the system's existing spin
+          var Lz = 0;
           for (var i = 0; i < n; i++) {
             var dcx = particles[i].x - cmx;
             var dcy = particles[i].y - cmy;
-            var rc = Math.sqrt(dcx * dcx + dcy * dcy) + 1;
-            particles[i].vx += (feedbackKick * dcx) / rc;
-            particles[i].vy += (feedbackKick * dcy) / rc;
+            Lz += particles[i].m * (dcx * particles[i].vy - dcy * particles[i].vx);
           }
+          kickSpinSign = Lz >= 0 ? 1 : -1;
+          kickCmx = cmx;
+          kickCmy = cmy;
+          // Queue kicks closest-first — one per frame so the burst propagates outward
+          pendingKicks = dists.map(function (d, rank) {
+            return { idx: d.idx, delay: rank };
+          });
+          pendingKickFrame = 0;
           feedbackCooldown = feedbackCooldownMax;
         }
+      }
+
+      // Apply queued feedback kicks — wave-front moves outward one particle per frame
+      if (pendingKicks.length > 0) {
+        var stillPending = [];
+        for (var k = 0; k < pendingKicks.length; k++) {
+          var pk = pendingKicks[k];
+          if (pendingKickFrame >= pk.delay) {
+            var i = pk.idx;
+            var dcx = particles[i].x - kickCmx;
+            var dcy = particles[i].y - kickCmy;
+            var rc = Math.sqrt(dcx * dcx + dcy * dcy) + 1;
+            var rx = dcx / rc;
+            var ry = dcy / rc;
+            var tx = -kickSpinSign * ry; // tangential unit vector (perpendicular to radial)
+            var ty = kickSpinSign * rx;
+            particles[i].vx += feedbackKick * ((1 - tangentialFrac) * rx + tangentialFrac * tx);
+            particles[i].vy += feedbackKick * ((1 - tangentialFrac) * ry + tangentialFrac * ty);
+            var sp = Math.sqrt(particles[i].vx * particles[i].vx + particles[i].vy * particles[i].vy);
+            if (sp > maxSpeed) {
+              particles[i].vx = (particles[i].vx / sp) * maxSpeed;
+              particles[i].vy = (particles[i].vy / sp) * maxSpeed;
+            }
+          } else {
+            stillPending.push(pk);
+          }
+        }
+        pendingKicks = stillPending;
+        pendingKickFrame++;
       }
 
       // Pairwise softened gravity with minimum-image convention
