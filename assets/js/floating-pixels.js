@@ -195,6 +195,15 @@
     var ax = new Float64Array(N);
     var ay = new Float64Array(N);
 
+    // Feedback parameters — fires when the system collapses into a tight cluster
+    var feedbackCooldown = 0; // frames remaining before feedback can fire again
+    var feedbackCooldownMax = 420; // ~7 s at 60 fps before next allowed event
+    var feedbackCheckInterval = 30; // re-evaluate clustering every 30 frames
+    var feedbackFrame = 0;
+    // Collapse threshold: RMS radius < this fraction of initial scatter triggers feedback
+    var collapseThreshold = Math.min(scatterX, scatterY) * 0.28;
+    var feedbackKick = 1.4; // radial speed injected per particle (px/frame)
+
     function gravStep() {
       var n = particles.length;
       ax.fill(0);
@@ -203,6 +212,44 @@
       var Ly = bbox.y1 - bbox.y0;
       var hLx = Lx / 2;
       var hLy = Ly / 2;
+
+      // Recompute CoM (needed for feedback check and kick direction)
+      var totalM = 0,
+        cmx = 0,
+        cmy = 0;
+      for (var i = 0; i < n; i++) {
+        totalM += particles[i].m;
+        cmx += particles[i].x * particles[i].m;
+        cmy += particles[i].y * particles[i].m;
+      }
+      cmx /= totalM;
+      cmy /= totalM;
+
+      // Periodically check for galaxy collapse and fire feedback if due
+      feedbackFrame++;
+      if (feedbackCooldown > 0) feedbackCooldown--;
+      if (feedbackFrame % feedbackCheckInterval === 0 && feedbackCooldown === 0) {
+        // RMS radius from CoM
+        var rms = 0;
+        for (var i = 0; i < n; i++) {
+          var dcx = particles[i].x - cmx;
+          var dcy = particles[i].y - cmy;
+          rms += dcx * dcx + dcy * dcy;
+        }
+        rms = Math.sqrt(rms / n);
+
+        if (rms < collapseThreshold) {
+          // Feedback: radial velocity kick outward from CoM (supernova/AGN-like)
+          for (var i = 0; i < n; i++) {
+            var dcx = particles[i].x - cmx;
+            var dcy = particles[i].y - cmy;
+            var rc = Math.sqrt(dcx * dcx + dcy * dcy) + 1;
+            particles[i].vx += (feedbackKick * dcx) / rc;
+            particles[i].vy += (feedbackKick * dcy) / rc;
+          }
+          feedbackCooldown = feedbackCooldownMax;
+        }
+      }
 
       // Pairwise softened gravity with minimum-image convention
       for (var i = 0; i < n; i++) {
@@ -231,7 +278,7 @@
         particles[i].x += particles[i].vx;
         particles[i].y += particles[i].vy;
 
-        // Periodic wrapping — particle exits one side, enters the other
+        // Periodic wrapping
         if (particles[i].x < bbox.x0) particles[i].x += Lx;
         else if (particles[i].x >= bbox.x1) particles[i].x -= Lx;
         if (particles[i].y < bbox.y0) particles[i].y += Ly;
