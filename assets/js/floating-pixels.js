@@ -121,24 +121,12 @@
     var particles = [];
     var els = [];
 
-    // Per-page bbox fractions — chosen to stay in margins / below content.
-    // publications: right gutter + lower half (bibliography is a centred column)
-    // projects:     bottom-right quadrant (cards don't reach full width/height)
-    // cv:           right strip, full height (CV is a narrow centred column)
-    // default:      generous bottom-right area
-    var pageCfgs = {
-      "/publications/": { x0: 0.62, y0: 0.5, x1: 0.99, y1: 0.99 },
-      "/projects/": { x0: 0.55, y0: 0.52, x1: 0.99, y1: 0.99 },
-      "/cv/": { x0: 0.68, y0: 0.1, x1: 0.99, y1: 0.9 },
-    };
-    var cfg = pageCfgs[path] || { x0: 0.22, y0: 0.22, x1: 0.99, y1: 0.99 };
-
     function getBBox() {
       return {
-        x0: window.innerWidth * cfg.x0,
-        y0: window.innerHeight * cfg.y0,
-        x1: window.innerWidth * cfg.x1,
-        y1: window.innerHeight * cfg.y1,
+        x0: 0,
+        y0: 0,
+        x1: window.innerWidth,
+        y1: window.innerHeight,
       };
     }
     var bbox = getBBox();
