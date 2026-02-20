@@ -269,10 +269,14 @@
       }
     }
 
-    // Pre-allocated acceleration arrays — no GC per frame
+    // Pre-allocated arrays — no GC per frame
     var N = particles.length;
     var ax = new Float32Array(N);
     var ay = new Float32Array(N);
+    var dists = new Array(N);
+    for (var i = 0; i < N; i++) dists[i] = { idx: i, r: 0 };
+    var collapseCheckEvery = 60; // check collapse once per second, not every frame
+    var collapseCheckFrame = 0;
 
     // Intermittent damping parameters (randomised for both modes)
     var dampCycleOff = 420 + Math.floor(Math.random() * 180); // 7–10 s at 60 fps
@@ -351,15 +355,17 @@
         particleOpacity = 0; // fade out to mask the snap
       }
 
-      // Collapse detection: fire radial kicks when p90 radius < threshold
+      // Collapse detection: check once per second (not every frame) to avoid GC churn
       if (feedbackCooldown > 0) {
         feedbackCooldown--;
-      } else {
-        var dists = [];
+      } else if (++collapseCheckFrame >= collapseCheckEvery) {
+        collapseCheckFrame = 0;
+        // Update pre-allocated dists in-place — no object allocation
         for (var i = 0; i < n; i++) {
           var dcx = particles[i].x - cmx;
           var dcy = particles[i].y - cmy;
-          dists.push({ idx: i, r: Math.sqrt(dcx * dcx + dcy * dcy) });
+          dists[i].idx = i;
+          dists[i].r = Math.sqrt(dcx * dcx + dcy * dcy);
         }
         dists.sort(function (a, b) {
           return a.r - b.r;
