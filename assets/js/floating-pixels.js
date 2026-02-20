@@ -112,22 +112,10 @@
 
     animate();
   } else {
-    // ── Toomre & Toomre galaxy flyby ──────────────────────────────────────
-    var colCyan   = ["#00bcd4", "#4dd0e1", "#00acc1", "#26c6da"];
+    // ── Stochastic simulation: T&T flyby -or- damped N-body (chosen at random) ─
+    var colCyan = ["#00bcd4", "#4dd0e1", "#00acc1", "#26c6da"];
     var colPurple = ["#e040fb", "#ce93d8", "#ab47bc", "#ba68c8"];
-
-    var G      = 1.5;
-    var softSq = 100;  // softening ε² = 10² px
-    var M_nuc  = 80;   // nucleus mass ≫ ring-particle mass
-    var m_ring = 1.0;
-
-    // Ring definitions: {r, n} — radius (px), particle count
-    var ringsPrim = [{ r: 55, n: 10 }, { r: 90, n: 14 }, { r: 130, n: 18 }]; // primary
-    var ringsComp = [{ r: 40, n: 8 },  { r: 65, n: 12 }];                     // companion
-
-    var N_p1 = 42; // sum of ringsPrim[*].n
-    var N_p2 = 20; // sum of ringsComp[*].n
-    var N    = 2 + N_p1 + N_p2; // 64 total (2016 force pairs per frame)
+    var colMix = colCyan.concat(colPurple);
 
     var particles = [];
     var els = [];
@@ -136,94 +124,176 @@
       return { x0: 0, y0: 0, x1: window.innerWidth, y1: window.innerHeight };
     }
     var bbox = getBBox();
-    window.addEventListener("resize", function () { bbox = getBBox(); });
+    window.addEventListener("resize", function () {
+      bbox = getBBox();
+    });
 
-    // ── Parabolic flyby orbit ──────────────────────────────────────────────
-    // Galaxy 2 approaches galaxy 1 on a parabolic (E=0) trajectory.
-    var W      = window.innerWidth;
-    var H      = window.innerHeight;
-    var r_peri = Math.min(W, H) * 0.22;             // periapsis distance (px)
-    var M_enc  = 2 * M_nuc;                          // total mass driving the orbit
-    var h_orb  = Math.sqrt(G * M_enc * 2 * r_peri); // specific angular momentum
-    var theta0 = -1.7;                               // start angle from periapsis (rad)
-    var r0     = 2 * r_peri / (1 + Math.cos(theta0)); // initial separation
+    var W = window.innerWidth;
+    var H = window.innerHeight;
 
-    var c0 = Math.cos(theta0);
-    var s0 = Math.sin(theta0);
-    // Separation vector: nucleus 2 relative to nucleus 1 at t=0
-    var rel_x = r0 * c0;
-    var rel_y = r0 * s0;
-    // Parabolic velocity: v_r = GM/h·sinθ, v_θ = h/r; then to Cartesian
-    // r̂ = (cosθ, sinθ), θ̂ = (−sinθ, cosθ)
-    var vr0    = (G * M_enc / h_orb) * s0;
-    var vt0    = h_orb / r0;
-    var vrel_x = vr0 * c0 - vt0 * s0;
-    var vrel_y = vr0 * s0 + vt0 * c0;
+    // Randomised physics — different every page load
+    var G = 1.0 + Math.random() * 1.0; // 1.0–2.0
+    var softSq = 64 + Math.random() * 100; // ε = 8–13 px
+    var M_nuc = 60 + Math.random() * 40; // 60–100
 
-    // Place CoM right-of-centre, clear of left text column
-    var comx  = W * 0.65;
-    var comy  = H * 0.50;
-    var nuc1x = comx - rel_x * 0.5;
-    var nuc1y = comy - rel_y * 0.5;
-    var nuc2x = comx + rel_x * 0.5;
-    var nuc2y = comy + rel_y * 0.5;
-    // Equal-mass CoM frame: each nucleus carries half the relative velocity
-    var v1x = -vrel_x * 0.5;
-    var v1y = -vrel_y * 0.5;
-    var v2x =  vrel_x * 0.5;
-    var v2y =  vrel_y * 0.5;
-
-    // ── Particle factory ───────────────────────────────────────────────────
     function addParticle(x, y, vx, vy, m, palette, big) {
       var el = document.createElement("div");
       el.className = "pixel-float";
       el.style.background = palette[Math.floor(Math.random() * palette.length)];
-      if (big) { el.style.width = "8px"; el.style.height = "8px"; }
+      if (big) {
+        el.style.width = "8px";
+        el.style.height = "8px";
+      }
       document.body.appendChild(el);
       els.push(el);
       particles.push({ x: x, y: y, vx: vx, vy: vy, m: m });
     }
 
-    // Nuclei (index 0 = primary/cyan, index 1 = companion/purple)
-    addParticle(nuc1x, nuc1y, v1x, v1y, M_nuc, colCyan,   true);
-    addParticle(nuc2x, nuc2y, v2x, v2y, M_nuc, colPurple, true);
+    var useTT = Math.random() < 0.5; // 50 % T&T flyby, 50 % damped N-body
 
-    // Ring particles in circular orbits around a nucleus
-    function addRings(nx, ny, nvx, nvy, rings, palette) {
-      for (var ri = 0; ri < rings.length; ri++) {
-        var rr   = rings[ri].r;
-        var nn   = rings[ri].n;
-        var vOrb = Math.sqrt(G * M_nuc / rr); // Keplerian circular speed
-        for (var j = 0; j < nn; j++) {
-          var ang = (2 * Math.PI * j / nn) + (Math.random() - 0.5) * 0.15;
-          var px  = nx + rr * Math.cos(ang);
-          var py  = ny + rr * Math.sin(ang);
-          var pvx = nvx - vOrb * Math.sin(ang); // tangential (CCW)
-          var pvy = nvy + vOrb * Math.cos(ang);
-          addParticle(px, py, pvx, pvy, m_ring, palette, false);
+    if (useTT) {
+      // ── T&T flyby ICs: two disk galaxies on a parabolic encounter ─────────
+      var ringsPrim = [
+        { r: 40 + Math.random() * 20, n: 8 + Math.floor(Math.random() * 5) },
+        { r: 70 + Math.random() * 25, n: 12 + Math.floor(Math.random() * 5) },
+        { r: 110 + Math.random() * 30, n: 16 + Math.floor(Math.random() * 5) },
+      ];
+      var ringsComp = [
+        { r: 30 + Math.random() * 15, n: 6 + Math.floor(Math.random() * 4) },
+        { r: 55 + Math.random() * 20, n: 10 + Math.floor(Math.random() * 4) },
+      ];
+
+      var r_peri = Math.min(W, H) * (0.15 + Math.random() * 0.15);
+      var M_enc = 2 * M_nuc;
+      var h_orb = Math.sqrt(G * M_enc * 2 * r_peri);
+      var theta0 = -(1.4 + Math.random() * 0.6); // -1.4 to -2.0 rad from periapsis
+      var r0 = (2 * r_peri) / (1 + Math.cos(theta0));
+
+      // Random orbit orientation — rotates the whole encounter plane
+      var orbitAngle = Math.random() * Math.PI * 2;
+      var oCos = Math.cos(orbitAngle);
+      var oSin = Math.sin(orbitAngle);
+
+      var c0 = Math.cos(theta0);
+      var s0 = Math.sin(theta0);
+      // Parabolic velocity: v_r = GM/h·sinθ, v_θ = h/r, then rotate
+      var vr0 = ((G * M_enc) / h_orb) * s0;
+      var vt0 = h_orb / r0;
+      var rel_x_raw = r0 * c0;
+      var rel_y_raw = r0 * s0;
+      var rel_x = rel_x_raw * oCos - rel_y_raw * oSin;
+      var rel_y = rel_x_raw * oSin + rel_y_raw * oCos;
+      var vrel_x_raw = vr0 * c0 - vt0 * s0;
+      var vrel_y_raw = vr0 * s0 + vt0 * c0;
+      var vrel_x = vrel_x_raw * oCos - vrel_y_raw * oSin;
+      var vrel_y = vrel_x_raw * oSin + vrel_y_raw * oCos;
+
+      // CoM placed randomly right-of-centre, clear of left text column
+      var comx = W * (0.55 + Math.random() * 0.2);
+      var comy = H * (0.35 + Math.random() * 0.3);
+      var nuc1x = comx - rel_x * 0.5;
+      var nuc1y = comy - rel_y * 0.5;
+      var nuc2x = comx + rel_x * 0.5;
+      var nuc2y = comy + rel_y * 0.5;
+      // Equal-mass CoM frame: each nucleus carries half the relative velocity
+      var v1x = -vrel_x * 0.5;
+      var v1y = -vrel_y * 0.5;
+      var v2x = vrel_x * 0.5;
+      var v2y = vrel_y * 0.5;
+
+      addParticle(nuc1x, nuc1y, v1x, v1y, M_nuc, colCyan, true);
+      addParticle(nuc2x, nuc2y, v2x, v2y, M_nuc, colPurple, true);
+
+      var addRings = function (nx, ny, nvx, nvy, rings, palette) {
+        for (var ri = 0; ri < rings.length; ri++) {
+          var rr = rings[ri].r;
+          var nn = rings[ri].n;
+          var vOrb = Math.sqrt((G * M_nuc) / rr); // Keplerian circular speed
+          for (var j = 0; j < nn; j++) {
+            var ang = (2 * Math.PI * j) / nn + (Math.random() - 0.5) * 0.2;
+            addParticle(
+              nx + rr * Math.cos(ang),
+              ny + rr * Math.sin(ang),
+              nvx - vOrb * Math.sin(ang),
+              nvy + vOrb * Math.cos(ang),
+              1.0,
+              palette,
+              false
+            );
+          }
         }
+      };
+      addRings(nuc1x, nuc1y, v1x, v1y, ringsPrim, colCyan);
+      addRings(nuc2x, nuc2y, v2x, v2y, ringsComp, colPurple);
+    } else {
+      // ── Damped N-body ICs: random scatter with Keplerian orbital velocities ─
+      var N_body = 60 + Math.floor(Math.random() * 60); // 60–120
+      var cx0 = W * (0.5 + Math.random() * 0.3);
+      var cy0 = H * (0.35 + Math.random() * 0.3);
+      var scatterX = W * (0.12 + Math.random() * 0.12);
+      var scatterY = H * (0.12 + Math.random() * 0.12);
+
+      // First pass: positions for CoM calculation
+      var tempPos = [];
+      var totalM_body = 0;
+      var cmx_body = 0;
+      var cmy_body = 0;
+      for (var i = 0; i < N_body; i++) {
+        var m_i = 0.8 + Math.random() * 0.4;
+        var x_i = cx0 + (Math.random() - 0.5) * 2 * scatterX;
+        var y_i = cy0 + (Math.random() - 0.5) * 2 * scatterY;
+        totalM_body += m_i;
+        cmx_body += x_i * m_i;
+        cmy_body += y_i * m_i;
+        tempPos.push({ x: x_i, y: y_i, m: m_i });
+      }
+      cmx_body /= totalM_body;
+      cmy_body /= totalM_body;
+
+      // Second pass: assign orbital velocities then add particles
+      var speedFactor = 0.5 + Math.random() * 0.5;
+      for (var i = 0; i < N_body; i++) {
+        var dx_i = tempPos[i].x - cmx_body;
+        var dy_i = tempPos[i].y - cmy_body;
+        var r_i = Math.sqrt(dx_i * dx_i + dy_i * dy_i) + 1;
+        var vO = Math.sqrt((G * totalM_body) / r_i) * speedFactor;
+        addParticle(
+          tempPos[i].x,
+          tempPos[i].y,
+          (-vO * dy_i) / r_i + (Math.random() - 0.5) * 0.3,
+          (vO * dx_i) / r_i + (Math.random() - 0.5) * 0.3,
+          tempPos[i].m,
+          colMix,
+          false
+        );
       }
     }
 
-    addRings(nuc1x, nuc1y, v1x, v1y, ringsPrim, colCyan);
-    addRings(nuc2x, nuc2y, v2x, v2y, ringsComp, colPurple);
-
-    // ── Pre-allocated acceleration arrays — no GC per frame ───────────────
+    // Pre-allocated acceleration arrays — no GC per frame
+    var N = particles.length;
     var ax = new Float32Array(N);
     var ay = new Float32Array(N);
 
-    // ── Intermittent damping: free dynamics ~8 s, gentle cooling burst ~1.3 s ──
-    var dampCycleOff = 480;   // frames without damping
-    var dampCycleOn  = 80;    // frames with damping
-    var dampStrength = 0.992; // per-frame velocity scale when active
-    var dampFrame    = 0;
+    // Intermittent damping parameters (randomised for both modes)
+    var dampCycleOff = 420 + Math.floor(Math.random() * 180); // 7–10 s at 60 fps
+    var dampCycleOn = 60 + Math.floor(Math.random() * 60); // 1–2 s
+    var dampStrength = 0.99 + Math.random() * 0.007; // 0.990–0.997
+    var dampFrame = 0;
+
+    // Collapse feedback — radial kicks when p90 radius drops below threshold
+    var collapseThreshold = Math.min(W, H) * (0.08 + Math.random() * 0.08);
+    var feedbackKick = 1.2 + Math.random() * 0.8; // 1.2–2.0 px/frame
+    var maxSpeed = 3.0 + Math.random() * 1.5; // 3.0–4.5 px/frame
+    var feedbackCooldown = 0;
+    var feedbackCooldownMax = 360 + Math.floor(Math.random() * 120); // 6–8 s
+    var particleOpacity = 0.45;
 
     function gravStep() {
       var n = particles.length;
       ax.fill(0);
       ay.fill(0);
-      var Lx  = bbox.x1 - bbox.x0;
-      var Ly  = bbox.y1 - bbox.y0;
+      var Lx = bbox.x1 - bbox.x0;
+      var Ly = bbox.y1 - bbox.y0;
       var hLx = Lx * 0.5;
       var hLy = Ly * 0.5;
 
@@ -234,9 +304,11 @@
           var pj = particles[j];
           var dx = pj.x - pi.x;
           var dy = pj.y - pi.y;
-          if (dx >  hLx) dx -= Lx; else if (dx < -hLx) dx += Lx;
-          if (dy >  hLy) dy -= Ly; else if (dy < -hLy) dy += Ly;
-          var r2  = dx * dx + dy * dy + softSq;
+          if (dx > hLx) dx -= Lx;
+          else if (dx < -hLx) dx += Lx;
+          if (dy > hLy) dy -= Ly;
+          else if (dy < -hLy) dy += Ly;
+          var r2 = dx * dx + dy * dy + softSq;
           var inv = 1.0 / (r2 * Math.sqrt(r2)); // r2^{-3/2}
           ax[i] += G * pj.m * inv * dx;
           ay[i] += G * pj.m * inv * dy;
@@ -245,7 +317,61 @@
         }
       }
 
-      // Intermittent damping: active for dampCycleOn frames every dampCycleOff frames
+      // Recompute CoM (needed for feedback and velocity correction)
+      var totalM = 0;
+      var cmx = 0;
+      var cmy = 0;
+      for (var i = 0; i < n; i++) {
+        totalM += particles[i].m;
+        cmx += particles[i].x * particles[i].m;
+        cmy += particles[i].y * particles[i].m;
+      }
+      cmx /= totalM;
+      cmy /= totalM;
+
+      // Collapse detection: fire radial kicks when p90 radius < threshold
+      if (feedbackCooldown > 0) {
+        feedbackCooldown--;
+      } else {
+        var dists = [];
+        for (var i = 0; i < n; i++) {
+          var dcx = particles[i].x - cmx;
+          var dcy = particles[i].y - cmy;
+          dists.push({ idx: i, r: Math.sqrt(dcx * dcx + dcy * dcy) });
+        }
+        dists.sort(function (a, b) {
+          return a.r - b.r;
+        });
+        if (dists[Math.floor(n * 0.9)].r < collapseThreshold) {
+          for (var k = 0; k < n; k++) {
+            var i = dists[k].idx;
+            var dcx = particles[i].x - cmx;
+            var dcy = particles[i].y - cmy;
+            var rc = Math.sqrt(dcx * dcx + dcy * dcy);
+            var rx, ry;
+            if (rc < 1) {
+              var ang = Math.random() * Math.PI * 2;
+              rx = Math.cos(ang);
+              ry = Math.sin(ang);
+            } else {
+              rx = dcx / rc;
+              ry = dcy / rc;
+            }
+            var kickScale = collapseThreshold / (rc + collapseThreshold);
+            particles[i].vx += feedbackKick * kickScale * rx;
+            particles[i].vy += feedbackKick * kickScale * ry;
+            var sp = Math.sqrt(particles[i].vx * particles[i].vx + particles[i].vy * particles[i].vy);
+            if (sp > maxSpeed) {
+              particles[i].vx = (particles[i].vx / sp) * maxSpeed;
+              particles[i].vy = (particles[i].vy / sp) * maxSpeed;
+            }
+          }
+          feedbackCooldown = feedbackCooldownMax;
+          particleOpacity = 0;
+        }
+      }
+
+      // Intermittent damping
       dampFrame++;
       var d = 1.0;
       if (dampFrame > dampCycleOff) {
@@ -253,39 +379,38 @@
         if (dampFrame > dampCycleOff + dampCycleOn) dampFrame = 0;
       }
 
-      // Velocity update with optional damping
       for (var i = 0; i < n; i++) {
         particles[i].vx = (particles[i].vx + ax[i]) * d;
         particles[i].vy = (particles[i].vy + ay[i]) * d;
       }
 
       // Subtract net CoM velocity — keeps system from drifting off-screen
-      var totalM = 0;
-      var vcmx   = 0;
-      var vcmy   = 0;
+      var vcmx = 0;
+      var vcmy = 0;
       for (var i = 0; i < n; i++) {
-        totalM += particles[i].m;
-        vcmx   += particles[i].m * particles[i].vx;
-        vcmy   += particles[i].m * particles[i].vy;
+        vcmx += particles[i].m * particles[i].vx;
+        vcmy += particles[i].m * particles[i].vy;
       }
       vcmx /= totalM;
       vcmy /= totalM;
 
+      if (particleOpacity < 0.45) particleOpacity = Math.min(0.45, particleOpacity + 0.45 / 40);
+
       for (var i = 0; i < n; i++) {
         particles[i].vx -= vcmx;
         particles[i].vy -= vcmy;
-        particles[i].x  += particles[i].vx;
-        particles[i].y  += particles[i].vy;
+        particles[i].x += particles[i].vx;
+        particles[i].y += particles[i].vy;
 
         // Periodic wrapping
-        if      (particles[i].x < bbox.x0)  particles[i].x += Lx;
+        if (particles[i].x < bbox.x0) particles[i].x += Lx;
         else if (particles[i].x >= bbox.x1) particles[i].x -= Lx;
-        if      (particles[i].y < bbox.y0)  particles[i].y += Ly;
+        if (particles[i].y < bbox.y0) particles[i].y += Ly;
         else if (particles[i].y >= bbox.y1) particles[i].y -= Ly;
 
-        els[i].style.left    = (particles[i].x - 2.5) + "px";
-        els[i].style.top     = (particles[i].y - 2.5) + "px";
-        els[i].style.opacity = 0.45;
+        els[i].style.left = particles[i].x - 2.5 + "px";
+        els[i].style.top = particles[i].y - 2.5 + "px";
+        els[i].style.opacity = particleOpacity;
       }
 
       requestAnimationFrame(gravStep);
