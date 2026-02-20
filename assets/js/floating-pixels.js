@@ -283,6 +283,7 @@
     // Collapse feedback — radial kicks when p90 radius drops below threshold
     var collapseThreshold = Math.min(W, H) * (0.08 + Math.random() * 0.08);
     var feedbackKick = 2.0 + Math.random() * 1.0; // 2.0–3.0 px/frame
+    var feedbackLambda = 3 + Math.random() * 7; // exponential scale length 3–10 px
     var maxSpeed = 4.0 + Math.random() * 2.0; // 4.0–6.0 px/frame
     var feedbackCooldown = 0;
     var feedbackCooldownMax = 360 + Math.floor(Math.random() * 120); // 6–8 s
@@ -369,9 +370,9 @@
             var dcx = particles[i].x - cmx;
             var dcy = particles[i].y - cmy;
             var rc = Math.sqrt(dcx * dcx + dcy * dcy);
-            // Linear falloff: full kick at centre, zero beyond collapseThreshold
-            var kickScale = Math.max(0, 1 - rc / collapseThreshold);
-            if (kickScale === 0) break; // dists is sorted by r; no further particles qualify
+            // Exponential profile: maximum at centre, e-folding over feedbackLambda px
+            var kickScale = Math.exp(-rc / feedbackLambda);
+            if (kickScale < 0.01) break; // dists sorted by r; negligible beyond ~5λ
             var rx, ry;
             if (rc < 1) {
               var ang = Math.random() * Math.PI * 2;
