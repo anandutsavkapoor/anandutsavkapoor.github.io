@@ -329,6 +329,22 @@
       cmx /= totalM;
       cmy /= totalM;
 
+      // Snap to centre if CoM drifts within 10 % of any viewport edge
+      var edgeMargin = Math.min(Lx, Ly) * 0.1;
+      if (cmx < bbox.x0 + edgeMargin || cmx > bbox.x1 - edgeMargin || cmy < bbox.y0 + edgeMargin || cmy > bbox.y1 - edgeMargin) {
+        var snapX = Lx * 0.5;
+        var snapY = Ly * 0.5;
+        var shiftX = snapX - cmx;
+        var shiftY = snapY - cmy;
+        for (var i = 0; i < n; i++) {
+          particles[i].x += shiftX;
+          particles[i].y += shiftY;
+        }
+        cmx = snapX;
+        cmy = snapY;
+        particleOpacity = 0; // fade out to mask the snap
+      }
+
       // Collapse detection: fire radial kicks when p90 radius < threshold
       if (feedbackCooldown > 0) {
         feedbackCooldown--;
@@ -348,6 +364,9 @@
             var dcx = particles[i].x - cmx;
             var dcy = particles[i].y - cmy;
             var rc = Math.sqrt(dcx * dcx + dcy * dcy);
+            // Linear falloff: full kick at centre, zero beyond collapseThreshold
+            var kickScale = Math.max(0, 1 - rc / collapseThreshold);
+            if (kickScale === 0) break; // dists is sorted by r; no further particles qualify
             var rx, ry;
             if (rc < 1) {
               var ang = Math.random() * Math.PI * 2;
@@ -357,7 +376,6 @@
               rx = dcx / rc;
               ry = dcy / rc;
             }
-            var kickScale = collapseThreshold / (rc + collapseThreshold);
             particles[i].vx += feedbackKick * kickScale * rx;
             particles[i].vy += feedbackKick * kickScale * ry;
             var sp = Math.sqrt(particles[i].vx * particles[i].vx + particles[i].vy * particles[i].vy);
