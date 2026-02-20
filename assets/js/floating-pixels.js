@@ -286,6 +286,11 @@
     var maxSpeed = 4.0 + Math.random() * 2.0; // 4.0–6.0 px/frame
     var feedbackCooldown = 0;
     var feedbackCooldownMax = 360 + Math.floor(Math.random() * 120); // 6–8 s
+    var feedbackCount = 0; // consecutive collapse triggers
+    var feedbackCountThreshold = 3; // trigger rescue after this many
+    var rescueDampFrames = 0; // frames remaining in rescue phase (0 = inactive)
+    var rescueDampDuration = 300 + Math.floor(Math.random() * 180); // 5–8 s
+    var rescueDampStrength = 0.97 + Math.random() * 0.015; // 0.970–0.985
     var particleOpacity = 0.45;
 
     function gravStep() {
@@ -385,15 +390,25 @@
             }
           }
           feedbackCooldown = feedbackCooldownMax;
+          feedbackCount++;
+          if (feedbackCount >= feedbackCountThreshold && rescueDampFrames === 0) {
+            rescueDampFrames = rescueDampDuration;
+            feedbackCount = 0;
+          }
         }
       }
 
-      // Intermittent damping
-      dampFrame++;
+      // Intermittent damping — rescue phase overrides normal schedule
       var d = 1.0;
-      if (dampFrame > dampCycleOff) {
-        d = dampStrength;
-        if (dampFrame > dampCycleOff + dampCycleOn) dampFrame = 0;
+      if (rescueDampFrames > 0) {
+        d = rescueDampStrength;
+        rescueDampFrames--;
+      } else {
+        dampFrame++;
+        if (dampFrame > dampCycleOff) {
+          d = dampStrength;
+          if (dampFrame > dampCycleOff + dampCycleOn) dampFrame = 0;
+        }
       }
 
       for (var i = 0; i < n; i++) {
