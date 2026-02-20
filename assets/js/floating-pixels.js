@@ -365,6 +365,10 @@
           return a.r - b.r;
         });
         if (dists[Math.floor(n * 0.9)].r < collapseThreshold) {
+          // Concentration factor: amplify kicks when particles pile up at CoM.
+          // p50 ≪ collapseThreshold → concFactor → large (capped at 6×).
+          var p50 = dists[Math.floor(n * 0.5)].r;
+          var concFactor = Math.min(collapseThreshold / (p50 + Math.sqrt(softSq)), 6.0);
           for (var k = 0; k < n; k++) {
             var i = dists[k].idx;
             var dcx = particles[i].x - cmx;
@@ -382,8 +386,8 @@
               rx = dcx / rc;
               ry = dcy / rc;
             }
-            particles[i].vx += feedbackKick * kickScale * rx;
-            particles[i].vy += feedbackKick * kickScale * ry;
+            particles[i].vx += feedbackKick * concFactor * kickScale * rx;
+            particles[i].vy += feedbackKick * concFactor * kickScale * ry;
             var sp = Math.sqrt(particles[i].vx * particles[i].vx + particles[i].vy * particles[i].vy);
             if (sp > maxSpeed) {
               particles[i].vx = (particles[i].vx / sp) * maxSpeed;
