@@ -282,8 +282,8 @@
 
     // Collapse feedback — radial kicks when p90 radius drops below threshold
     var collapseThreshold = Math.min(W, H) * (0.08 + Math.random() * 0.08);
-    var feedbackKick = 1.2 + Math.random() * 0.8; // 1.2–2.0 px/frame
-    var maxSpeed = 3.0 + Math.random() * 1.5; // 3.0–4.5 px/frame
+    var feedbackKick = 2.0 + Math.random() * 1.0; // 2.0–3.0 px/frame
+    var maxSpeed = 4.0 + Math.random() * 2.0; // 4.0–6.0 px/frame
     var feedbackCooldown = 0;
     var feedbackCooldownMax = 360 + Math.floor(Math.random() * 120); // 6–8 s
     var particleOpacity = 0.45;
@@ -385,7 +385,6 @@
             }
           }
           feedbackCooldown = feedbackCooldownMax;
-          particleOpacity = 0;
         }
       }
 
