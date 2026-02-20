@@ -369,19 +369,45 @@
           // p50 ≪ collapseThreshold → concFactor → large (capped at 6×).
           var p50 = dists[Math.floor(n * 0.5)].r;
           var concFactor = Math.min(collapseThreshold / (p50 + Math.sqrt(softSq)), 6.0);
-          // Hard cutoff: only particles within 3λ of CoM are kicked.
+          // Density centre: mass-weighted centre of the most concentrated cluster.
+          // O(N²) search — fires at most once per cooldown (6–8 s), negligible cost.
           var kickRadius = feedbackLambda * 3;
+          var kickRadSq = kickRadius * kickRadius;
+          var bestCount = 0;
+          var dcenterX = cmx;
+          var dcenterY = cmy;
+          for (var ii = 0; ii < n; ii++) {
+            var cnt = 0;
+            var wx = 0;
+            var wy = 0;
+            var wm = 0;
+            for (var jj = 0; jj < n; jj++) {
+              var ddx = particles[jj].x - particles[ii].x;
+              var ddy = particles[jj].y - particles[ii].y;
+              if (ddx * ddx + ddy * ddy < kickRadSq) {
+                cnt++;
+                wx += particles[jj].x * particles[jj].m;
+                wy += particles[jj].y * particles[jj].m;
+                wm += particles[jj].m;
+              }
+            }
+            if (cnt > bestCount) {
+              bestCount = cnt;
+              dcenterX = wx / wm;
+              dcenterY = wy / wm;
+            }
+          }
+          // Kick particles within kickRadius of the density centre
           for (var k = 0; k < n; k++) {
-            if (dists[k].r > kickRadius) break; // sorted; all further particles beyond cutoff
-            var i = dists[k].idx;
-            var dcx = particles[i].x - cmx;
-            var dcy = particles[i].y - cmy;
-            var rc = dists[k].r; // already computed
-            // Exponential radial profile centred on CoM
+            var dcx = particles[k].x - dcenterX;
+            var dcy = particles[k].y - dcenterY;
+            var rc2 = dcx * dcx + dcy * dcy;
+            if (rc2 > kickRadSq) continue;
+            var rc = Math.sqrt(rc2);
+            // Exponential radial profile centred on density peak
             var kickScale = Math.exp(-rc / feedbackLambda);
-            // Velocity factor: kick particles slow in the CoM frame more strongly.
-            // sp is the CoM-frame speed (CoM velocity subtracted every frame).
-            var sp = Math.sqrt(particles[i].vx * particles[i].vx + particles[i].vy * particles[i].vy);
+            // Velocity factor: kick slow (CoM-frame) particles more strongly
+            var sp = Math.sqrt(particles[k].vx * particles[k].vx + particles[k].vy * particles[k].vy);
             var velFactor = Math.max(0, 1 - sp / maxSpeed);
             var rx, ry;
             if (rc < 1) {
@@ -389,15 +415,15 @@
               rx = Math.cos(ang);
               ry = Math.sin(ang);
             } else {
-              rx = dcx / rc; // radially outward from CoM
+              rx = dcx / rc; // radially outward from density centre
               ry = dcy / rc;
             }
-            particles[i].vx += feedbackKick * concFactor * kickScale * velFactor * rx;
-            particles[i].vy += feedbackKick * concFactor * kickScale * velFactor * ry;
-            var spAfter = Math.sqrt(particles[i].vx * particles[i].vx + particles[i].vy * particles[i].vy);
+            particles[k].vx += feedbackKick * concFactor * kickScale * velFactor * rx;
+            particles[k].vy += feedbackKick * concFactor * kickScale * velFactor * ry;
+            var spAfter = Math.sqrt(particles[k].vx * particles[k].vx + particles[k].vy * particles[k].vy);
             if (spAfter > maxSpeed) {
-              particles[i].vx = (particles[i].vx / spAfter) * maxSpeed;
-              particles[i].vy = (particles[i].vy / spAfter) * maxSpeed;
+              particles[k].vx = (particles[k].vx / spAfter) * maxSpeed;
+              particles[k].vy = (particles[k].vy / spAfter) * maxSpeed;
             }
           }
           feedbackCooldown = feedbackCooldownMax;
