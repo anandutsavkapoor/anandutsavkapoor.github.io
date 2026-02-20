@@ -117,7 +117,7 @@
     var N = 100; // 100 particles → 4950 force pairs per frame
     var G = 1.5; // lower G → slower orbital speeds (v ∝ √G)
     var softSq = 144; // softening ε² = 12² px
-    var damping = 0.9995; // near-conservative for slow, persistent orbits
+    var damping = 1.0; // conservative (no dissipation)
     var particles = [];
     var els = [];
 
