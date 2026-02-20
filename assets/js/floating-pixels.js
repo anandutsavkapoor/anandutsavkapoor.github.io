@@ -369,29 +369,35 @@
           // p50 ≪ collapseThreshold → concFactor → large (capped at 6×).
           var p50 = dists[Math.floor(n * 0.5)].r;
           var concFactor = Math.min(collapseThreshold / (p50 + Math.sqrt(softSq)), 6.0);
+          // Hard cutoff: only particles within 3λ of CoM are kicked.
+          var kickRadius = feedbackLambda * 3;
           for (var k = 0; k < n; k++) {
+            if (dists[k].r > kickRadius) break; // sorted; all further particles beyond cutoff
             var i = dists[k].idx;
             var dcx = particles[i].x - cmx;
             var dcy = particles[i].y - cmy;
-            var rc = Math.sqrt(dcx * dcx + dcy * dcy);
-            // Exponential profile: maximum at centre, e-folding over feedbackLambda px
+            var rc = dists[k].r; // already computed
+            // Exponential radial profile centred on CoM
             var kickScale = Math.exp(-rc / feedbackLambda);
-            if (kickScale < 0.01) break; // dists sorted by r; negligible beyond ~5λ
+            // Velocity factor: kick particles slow in the CoM frame more strongly.
+            // sp is the CoM-frame speed (CoM velocity subtracted every frame).
+            var sp = Math.sqrt(particles[i].vx * particles[i].vx + particles[i].vy * particles[i].vy);
+            var velFactor = Math.max(0, 1 - sp / maxSpeed);
             var rx, ry;
             if (rc < 1) {
               var ang = Math.random() * Math.PI * 2;
               rx = Math.cos(ang);
               ry = Math.sin(ang);
             } else {
-              rx = dcx / rc;
+              rx = dcx / rc; // radially outward from CoM
               ry = dcy / rc;
             }
-            particles[i].vx += feedbackKick * concFactor * kickScale * rx;
-            particles[i].vy += feedbackKick * concFactor * kickScale * ry;
-            var sp = Math.sqrt(particles[i].vx * particles[i].vx + particles[i].vy * particles[i].vy);
-            if (sp > maxSpeed) {
-              particles[i].vx = (particles[i].vx / sp) * maxSpeed;
-              particles[i].vy = (particles[i].vy / sp) * maxSpeed;
+            particles[i].vx += feedbackKick * concFactor * kickScale * velFactor * rx;
+            particles[i].vy += feedbackKick * concFactor * kickScale * velFactor * ry;
+            var spAfter = Math.sqrt(particles[i].vx * particles[i].vx + particles[i].vy * particles[i].vy);
+            if (spAfter > maxSpeed) {
+              particles[i].vx = (particles[i].vx / spAfter) * maxSpeed;
+              particles[i].vy = (particles[i].vy / spAfter) * maxSpeed;
             }
           }
           feedbackCooldown = feedbackCooldownMax;
