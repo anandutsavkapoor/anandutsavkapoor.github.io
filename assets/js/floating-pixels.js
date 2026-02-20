@@ -112,190 +112,120 @@
 
     animate();
   } else {
-    // ── Gravity N-body: region varies per page to avoid text ────────────────
-    var colors = ["#00bcd4", "#e040fb", "#00bcd4", "#e040fb", "#4dd0e1", "#ce93d8"];
-    var N = 100; // 100 particles → 4950 force pairs per frame
-    var G = 1.5; // lower G → slower orbital speeds (v ∝ √G)
-    var softSq = 144; // softening ε² = 12² px
-    var damping = 1.0; // conservative (no dissipation)
+    // ── Toomre & Toomre galaxy flyby ──────────────────────────────────────
+    var colCyan   = ["#00bcd4", "#4dd0e1", "#00acc1", "#26c6da"];
+    var colPurple = ["#e040fb", "#ce93d8", "#ab47bc", "#ba68c8"];
+
+    var G      = 1.5;
+    var softSq = 100;  // softening ε² = 10² px
+    var M_nuc  = 80;   // nucleus mass ≫ ring-particle mass
+    var m_ring = 1.0;
+
+    // Ring definitions: {r, n} — radius (px), particle count
+    var ringsPrim = [{ r: 55, n: 10 }, { r: 90, n: 14 }, { r: 130, n: 18 }]; // primary
+    var ringsComp = [{ r: 40, n: 8 },  { r: 65, n: 12 }];                     // companion
+
+    var N_p1 = 42; // sum of ringsPrim[*].n
+    var N_p2 = 20; // sum of ringsComp[*].n
+    var N    = 2 + N_p1 + N_p2; // 64 total (2016 force pairs per frame)
+
     var particles = [];
     var els = [];
 
     function getBBox() {
-      return {
-        x0: 0,
-        y0: 0,
-        x1: window.innerWidth,
-        y1: window.innerHeight,
-      };
+      return { x0: 0, y0: 0, x1: window.innerWidth, y1: window.innerHeight };
     }
     var bbox = getBBox();
-    window.addEventListener("resize", function () {
-      bbox = getBBox();
-    });
+    window.addEventListener("resize", function () { bbox = getBBox(); });
 
-    // Seed the cluster right-of-centre — clear of text (left column) and viewport edges.
-    // CoM velocity is zeroed every frame so the structure stays near this point.
-    var cx0 = window.innerWidth * 0.72;
-    var cy0 = window.innerHeight * 0.5;
-    var scatterX = window.innerWidth * 0.18; // compact enough to stay away from edges
-    var scatterY = window.innerHeight * 0.22;
+    // ── Parabolic flyby orbit ──────────────────────────────────────────────
+    // Galaxy 2 approaches galaxy 1 on a parabolic (E=0) trajectory.
+    var W      = window.innerWidth;
+    var H      = window.innerHeight;
+    var r_peri = Math.min(W, H) * 0.22;             // periapsis distance (px)
+    var M_enc  = 2 * M_nuc;                          // total mass driving the orbit
+    var h_orb  = Math.sqrt(G * M_enc * 2 * r_peri); // specific angular momentum
+    var theta0 = -1.7;                               // start angle from periapsis (rad)
+    var r0     = 2 * r_peri / (1 + Math.cos(theta0)); // initial separation
 
-    // Step 1: scatter particles within the page-specific region
-    for (var i = 0; i < N; i++) {
+    var c0 = Math.cos(theta0);
+    var s0 = Math.sin(theta0);
+    // Separation vector: nucleus 2 relative to nucleus 1 at t=0
+    var rel_x = r0 * c0;
+    var rel_y = r0 * s0;
+    // Parabolic velocity: v_r = GM/h·sinθ, v_θ = h/r; then to Cartesian
+    // r̂ = (cosθ, sinθ), θ̂ = (−sinθ, cosθ)
+    var vr0    = (G * M_enc / h_orb) * s0;
+    var vt0    = h_orb / r0;
+    var vrel_x = vr0 * c0 - vt0 * s0;
+    var vrel_y = vr0 * s0 + vt0 * c0;
+
+    // Place CoM right-of-centre, clear of left text column
+    var comx  = W * 0.65;
+    var comy  = H * 0.50;
+    var nuc1x = comx - rel_x * 0.5;
+    var nuc1y = comy - rel_y * 0.5;
+    var nuc2x = comx + rel_x * 0.5;
+    var nuc2y = comy + rel_y * 0.5;
+    // Equal-mass CoM frame: each nucleus carries half the relative velocity
+    var v1x = -vrel_x * 0.5;
+    var v1y = -vrel_y * 0.5;
+    var v2x =  vrel_x * 0.5;
+    var v2y =  vrel_y * 0.5;
+
+    // ── Particle factory ───────────────────────────────────────────────────
+    function addParticle(x, y, vx, vy, m, palette, big) {
       var el = document.createElement("div");
       el.className = "pixel-float";
-      el.style.background = colors[Math.floor(Math.random() * colors.length)];
+      el.style.background = palette[Math.floor(Math.random() * palette.length)];
+      if (big) { el.style.width = "8px"; el.style.height = "8px"; }
       document.body.appendChild(el);
       els.push(el);
-      particles.push({
-        x: cx0 + (Math.random() - 0.5) * 2 * scatterX,
-        y: cy0 + (Math.random() - 0.5) * 2 * scatterY,
-        vx: 0,
-        vy: 0,
-        m: 0.8 + Math.random() * 0.4,
-      });
+      particles.push({ x: x, y: y, vx: vx, vy: vy, m: m });
     }
 
-    // Step 2: compute CoM, give each particle tangential orbital velocity
-    var totalM = 0,
-      cmx = 0,
-      cmy = 0;
-    for (var i = 0; i < N; i++) {
-      totalM += particles[i].m;
-      cmx += particles[i].x * particles[i].m;
-      cmy += particles[i].y * particles[i].m;
-    }
-    cmx /= totalM;
-    cmy /= totalM;
+    // Nuclei (index 0 = primary/cyan, index 1 = companion/purple)
+    addParticle(nuc1x, nuc1y, v1x, v1y, M_nuc, colCyan,   true);
+    addParticle(nuc2x, nuc2y, v2x, v2y, M_nuc, colPurple, true);
 
-    for (var i = 0; i < N; i++) {
-      var dx = particles[i].x - cmx;
-      var dy = particles[i].y - cmy;
-      var r = Math.sqrt(dx * dx + dy * dy) + 1;
-      var vOrb = Math.sqrt((G * totalM) / r) * 0.7;
-      particles[i].vx = (-vOrb * dy) / r + (Math.random() - 0.5) * 0.25;
-      particles[i].vy = (vOrb * dx) / r + (Math.random() - 0.5) * 0.25;
+    // Ring particles in circular orbits around a nucleus
+    function addRings(nx, ny, nvx, nvy, rings, palette) {
+      for (var ri = 0; ri < rings.length; ri++) {
+        var rr   = rings[ri].r;
+        var nn   = rings[ri].n;
+        var vOrb = Math.sqrt(G * M_nuc / rr); // Keplerian circular speed
+        for (var j = 0; j < nn; j++) {
+          var ang = (2 * Math.PI * j / nn) + (Math.random() - 0.5) * 0.15;
+          var px  = nx + rr * Math.cos(ang);
+          var py  = ny + rr * Math.sin(ang);
+          var pvx = nvx - vOrb * Math.sin(ang); // tangential (CCW)
+          var pvy = nvy + vOrb * Math.cos(ang);
+          addParticle(px, py, pvx, pvy, m_ring, palette, false);
+        }
+      }
     }
 
-    // Pre-allocate acceleration arrays — avoids GC every frame
+    addRings(nuc1x, nuc1y, v1x, v1y, ringsPrim, colCyan);
+    addRings(nuc2x, nuc2y, v2x, v2y, ringsComp, colPurple);
+
+    // ── Pre-allocated acceleration arrays — no GC per frame ───────────────
     var ax = new Float32Array(N);
     var ay = new Float32Array(N);
 
-    // Feedback parameters — fires when the system collapses into a tight cluster
-    var feedbackCooldown = 0; // frames remaining before feedback can fire again
-    var feedbackCooldownMax = 420; // ~7 s at 60 fps before next allowed event
-    // Collapse threshold: 90th-percentile radius must be below this (stricter than RMS)
-    var collapseThreshold = Math.min(scatterX, scatterY) * 0.28;
-    var feedbackKick = 1.5; // speed injected per particle (px/frame)
-    var maxSpeed = 3.5; // px/frame — cap post-kick velocity so nothing escapes bbox
-    var pendingKicks = []; // [{idx, delay}] — wave-front queue
-    var pendingKickFrame = 0;
-    var kickCmx = 0,
-      kickCmy = 0; // frozen at collapse event
-    var particleOpacity = 0.45; // fades to 0 on snap, recovers over ~40 frames
+    // ── Intermittent damping: free dynamics ~8 s, gentle cooling burst ~1.3 s ──
+    var dampCycleOff = 480;   // frames without damping
+    var dampCycleOn  = 80;    // frames with damping
+    var dampStrength = 0.992; // per-frame velocity scale when active
+    var dampFrame    = 0;
 
     function gravStep() {
       var n = particles.length;
       ax.fill(0);
       ay.fill(0);
-      var Lx = bbox.x1 - bbox.x0;
-      var Ly = bbox.y1 - bbox.y0;
-      var hLx = Lx / 2;
-      var hLy = Ly / 2;
-
-      // Recompute CoM (needed for feedback check and kick direction)
-      var totalM = 0,
-        cmx = 0,
-        cmy = 0;
-      for (var i = 0; i < n; i++) {
-        totalM += particles[i].m;
-        cmx += particles[i].x * particles[i].m;
-        cmy += particles[i].y * particles[i].m;
-      }
-      cmx /= totalM;
-      cmy /= totalM;
-
-      // Check for galaxy collapse every frame — fires the instant the system collapses
-      if (feedbackCooldown > 0) {
-        feedbackCooldown--;
-      } else {
-        var dists = [];
-        for (var i = 0; i < n; i++) {
-          var dcx = particles[i].x - cmx;
-          var dcy = particles[i].y - cmy;
-          dists.push({ idx: i, r: Math.sqrt(dcx * dcx + dcy * dcy) });
-        }
-        dists.sort(function (a, b) {
-          return a.r - b.r;
-        });
-        var p90r = dists[Math.floor(n * 0.9)].r;
-
-        if (p90r < collapseThreshold) {
-          // Only snap to seed point if the galaxy has drifted close to a viewport edge.
-          // In normal operation (galaxy stays near cx0/cy0) no snap occurs and the
-          // burst radiates from wherever the collapse actually happened.
-          var edgeMargin = Math.min(bbox.x1, bbox.y1) * 0.12;
-          var nearEdge = cmx < edgeMargin || cmx > bbox.x1 - edgeMargin || cmy < edgeMargin || cmy > bbox.y1 - edgeMargin;
-          if (nearEdge) {
-            var shiftX = cx0 - cmx;
-            var shiftY = cy0 - cmy;
-            for (var i = 0; i < n; i++) {
-              particles[i].x += shiftX;
-              particles[i].y += shiftY;
-            }
-            kickCmx = cx0;
-            kickCmy = cy0;
-            particleOpacity = 0; // fade out to mask the snap, recover during burst
-          } else {
-            kickCmx = cmx;
-            kickCmy = cmy;
-          }
-          // Queue kicks closest-first — one per frame so the burst propagates outward
-          pendingKicks = dists.map(function (d, rank) {
-            return { idx: d.idx, delay: rank };
-          });
-          pendingKickFrame = 0;
-          feedbackCooldown = feedbackCooldownMax;
-        }
-      }
-
-      // Apply queued feedback kicks — wave-front moves outward one particle per frame
-      if (pendingKicks.length > 0) {
-        var stillPending = [];
-        for (var k = 0; k < pendingKicks.length; k++) {
-          var pk = pendingKicks[k];
-          if (pendingKickFrame >= pk.delay) {
-            var i = pk.idx;
-            var dcx = particles[i].x - kickCmx;
-            var dcy = particles[i].y - kickCmy;
-            var rc = Math.sqrt(dcx * dcx + dcy * dcy);
-            // True unit vector; random direction for any particle sitting exactly at CoM
-            var rx, ry;
-            if (rc < 1) {
-              var ang = Math.random() * Math.PI * 2;
-              rx = Math.cos(ang);
-              ry = Math.sin(ang);
-            } else {
-              rx = dcx / rc;
-              ry = dcy / rc;
-            }
-            // Kick falls off with distance: full strength at CoM, ~half at collapseThreshold
-            var kickScale = collapseThreshold / (rc + collapseThreshold);
-            particles[i].vx += feedbackKick * kickScale * rx;
-            particles[i].vy += feedbackKick * kickScale * ry;
-            var sp = Math.sqrt(particles[i].vx * particles[i].vx + particles[i].vy * particles[i].vy);
-            if (sp > maxSpeed) {
-              particles[i].vx = (particles[i].vx / sp) * maxSpeed;
-              particles[i].vy = (particles[i].vy / sp) * maxSpeed;
-            }
-          } else {
-            stillPending.push(pk);
-          }
-        }
-        pendingKicks = stillPending;
-        pendingKickFrame++;
-      }
+      var Lx  = bbox.x1 - bbox.x0;
+      var Ly  = bbox.y1 - bbox.y0;
+      var hLx = Lx * 0.5;
+      var hLy = Ly * 0.5;
 
       // Pairwise softened gravity with minimum-image convention
       for (var i = 0; i < n; i++) {
@@ -304,52 +234,58 @@
           var pj = particles[j];
           var dx = pj.x - pi.x;
           var dy = pj.y - pi.y;
-          if (dx > hLx) dx -= Lx;
-          else if (dx < -hLx) dx += Lx;
-          if (dy > hLy) dy -= Ly;
-          else if (dy < -hLy) dy += Ly;
-          var r2 = dx * dx + dy * dy + softSq;
-          var inv_r = 1 / Math.sqrt(r2);
-          var inv_r3 = inv_r * inv_r * inv_r;
-          ax[i] += G * pj.m * inv_r3 * dx;
-          ay[i] += G * pj.m * inv_r3 * dy;
-          ax[j] -= G * pi.m * inv_r3 * dx;
-          ay[j] -= G * pi.m * inv_r3 * dy;
+          if (dx >  hLx) dx -= Lx; else if (dx < -hLx) dx += Lx;
+          if (dy >  hLy) dy -= Ly; else if (dy < -hLy) dy += Ly;
+          var r2  = dx * dx + dy * dy + softSq;
+          var inv = 1.0 / (r2 * Math.sqrt(r2)); // r2^{-3/2}
+          ax[i] += G * pj.m * inv * dx;
+          ay[i] += G * pj.m * inv * dy;
+          ax[j] -= G * pi.m * inv * dx;
+          ay[j] -= G * pi.m * inv * dy;
         }
       }
 
-      for (var i = 0; i < n; i++) {
-        particles[i].vx = (particles[i].vx + ax[i]) * damping;
-        particles[i].vy = (particles[i].vy + ay[i]) * damping;
+      // Intermittent damping: active for dampCycleOn frames every dampCycleOff frames
+      dampFrame++;
+      var d = 1.0;
+      if (dampFrame > dampCycleOff) {
+        d = dampStrength;
+        if (dampFrame > dampCycleOff + dampCycleOn) dampFrame = 0;
       }
 
-      // Remove net CoM velocity every frame — gravity is momentum-conserving but
-      // feedback kicks are not, so without this the CoM drifts after each event
-      var vcmx = 0,
-        vcmy = 0;
+      // Velocity update with optional damping
       for (var i = 0; i < n; i++) {
-        vcmx += particles[i].m * particles[i].vx;
-        vcmy += particles[i].m * particles[i].vy;
+        particles[i].vx = (particles[i].vx + ax[i]) * d;
+        particles[i].vy = (particles[i].vy + ay[i]) * d;
+      }
+
+      // Subtract net CoM velocity — keeps system from drifting off-screen
+      var totalM = 0;
+      var vcmx   = 0;
+      var vcmy   = 0;
+      for (var i = 0; i < n; i++) {
+        totalM += particles[i].m;
+        vcmx   += particles[i].m * particles[i].vx;
+        vcmy   += particles[i].m * particles[i].vy;
       }
       vcmx /= totalM;
       vcmy /= totalM;
-      // Fade opacity back to 0.45 after a snap event (~40 frames = 0.7 s)
-      if (particleOpacity < 0.45) particleOpacity = Math.min(0.45, particleOpacity + 0.45 / 40);
+
       for (var i = 0; i < n; i++) {
         particles[i].vx -= vcmx;
         particles[i].vy -= vcmy;
-        particles[i].x += particles[i].vx;
-        particles[i].y += particles[i].vy;
+        particles[i].x  += particles[i].vx;
+        particles[i].y  += particles[i].vy;
 
         // Periodic wrapping
-        if (particles[i].x < bbox.x0) particles[i].x += Lx;
+        if      (particles[i].x < bbox.x0)  particles[i].x += Lx;
         else if (particles[i].x >= bbox.x1) particles[i].x -= Lx;
-        if (particles[i].y < bbox.y0) particles[i].y += Ly;
+        if      (particles[i].y < bbox.y0)  particles[i].y += Ly;
         else if (particles[i].y >= bbox.y1) particles[i].y -= Ly;
 
-        els[i].style.left = particles[i].x - 2.5 + "px";
-        els[i].style.top = particles[i].y - 2.5 + "px";
-        els[i].style.opacity = particleOpacity;
+        els[i].style.left    = (particles[i].x - 2.5) + "px";
+        els[i].style.top     = (particles[i].y - 2.5) + "px";
+        els[i].style.opacity = 0.45;
       }
 
       requestAnimationFrame(gravStep);
