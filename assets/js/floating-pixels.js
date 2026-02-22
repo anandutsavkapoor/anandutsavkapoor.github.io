@@ -368,6 +368,7 @@
     var totalFeedbackFired = 0;
     var smoothCmx = -1; // -1 = uninitialised; snapped to cmx on gate opening (no initial drift)
     var smoothCmy = -1;
+    var heatingFrames = 0; // leaky counter; zoom-out only fires when this reaches 120 (~2 s)
 
     function gravStep() {
       var n = particles.length;
@@ -744,11 +745,18 @@
         emaKE_slow += (KE_zoom - emaKE_slow) * 0.003;
         emaKE_verySlow += (KE_zoom - emaKE_verySlow) * 0.001;
         var keRatio = emaKE_slow / (emaKE_verySlow + 1e-9);
-        var zoomDesired;
+        // Require sustained heating (≥120 frames ≈ 2 s) before zooming out —
+        // brief kick peaks never reach the threshold
         if (keRatio > 1.15) {
-          zoomDesired = 1.0; // heating/expanding — zoom out
+          heatingFrames = Math.min(heatingFrames + 1, 300);
+        } else {
+          heatingFrames = Math.max(0, heatingFrames - 1);
+        }
+        var zoomDesired;
+        if (heatingFrames >= 120) {
+          zoomDesired = 1.0; // sustained heating — zoom out
         } else if (keRatio > 0.85) {
-          zoomDesired = maxZoom; // equilibrium — zoom in
+          zoomDesired = maxZoom; // equilibrium (or brief excursion) — zoom in
         } else {
           zoomDesired = zoomLevel; // contracting/cooling — hold
         }
