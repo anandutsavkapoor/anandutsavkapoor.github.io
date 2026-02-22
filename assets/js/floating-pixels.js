@@ -227,6 +227,13 @@
       addParticle(nuc1x, nuc1y, v1x, v1y, M_nuc, colCyan, true);
       addParticle(nuc2x, nuc2y, v2x, v2y, M_nuc, colPurple, true);
 
+      // Fix total ring mass = M_nuc regardless of ring particle count,
+      // so dynamics are invariant when N is scaled up or down.
+      var N_ring_total = 0;
+      for (var ri = 0; ri < ringsPrim.length; ri++) N_ring_total += ringsPrim[ri].n;
+      for (var ri = 0; ri < ringsComp.length; ri++) N_ring_total += ringsComp[ri].n;
+      var m_ring = M_nuc / N_ring_total;
+
       var addRings = function (nx, ny, nvx, nvy, rings, palette) {
         for (var ri = 0; ri < rings.length; ri++) {
           var rr = rings[ri].r;
@@ -239,7 +246,7 @@
               ny + rr * Math.sin(ang),
               nvx - vOrb * Math.sin(ang),
               nvy + vOrb * Math.cos(ang),
-              1.0,
+              m_ring,
               palette,
               false
             );
@@ -272,6 +279,10 @@
       }
       cmx_body /= totalM_body;
       cmy_body /= totalM_body;
+      // Normalise total mass to 100 so dynamics are invariant with N
+      var massScale = 100 / totalM_body;
+      for (var i = 0; i < N_body; i++) tempPos[i].m *= massScale;
+      totalM_body = 100;
 
       // Second pass: assign orbital velocities then add particles
       var speedFactor = 0.5 + Math.random() * 0.5;
