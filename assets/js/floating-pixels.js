@@ -546,7 +546,7 @@
             postRescueKicksLeft > 0
               ? useTT
                 ? 3.0 + Math.random() * 7.0 // T&T: 3–10×
-                : 0.5 + Math.random() * 4.5 // N-body: 0.5–5×
+                : 1.0 + Math.random() * 4.0 // N-body: 1–5×
               : 1.0;
           var kickDpx = 0;
           var kickDpy = 0;
@@ -623,7 +623,7 @@
         for (var ki = 0; ki < n; ki++) {
           KE_cur += 0.5 * particles[ki].m * (particles[ki].vx * particles[ki].vx + particles[ki].vy * particles[ki].vy);
         }
-        if (KE_cur < 0.1 * KE_preDamp) {
+        if (KE_cur < 0.2 * KE_preDamp) {
           rescueDampFrames = 0;
           feedbackCooldown = 0;
           collapseCheckFrame = collapseCheckEvery; // force check on next frame
