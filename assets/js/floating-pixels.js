@@ -178,7 +178,7 @@
 
     var useTT = Math.random() < 0.5; // 50 % T&T flyby, 50 % damped N-body
     var kickMassRef = 1.0; // scaled in N-body branch to keep Δv N-invariant
-    var mergeCapMass = Infinity; // set in N-body branch: 100 × m_single
+    var mergeCapMass = Infinity; // set in N-body branch: 200 × m_single
     var mergeRemnantCap = Infinity; // set in N-body branch: 500 × m_single (total across all remnants)
 
     if (useTT) {
@@ -295,7 +295,7 @@
       // kickMassRef = totalM_body / N_body restores Δv ≈ feedbackKick (as if m=1).
       kickMassRef = totalM_body / N_body;
       // Merged particles are capped at 100× the base single-particle mass.
-      mergeCapMass = 100 * kickMassRef;
+      mergeCapMass = 200 * kickMassRef;
       // Total mass held across ALL merger remnants is capped at 200× m_single.
       mergeRemnantCap = 500 * kickMassRef;
 
