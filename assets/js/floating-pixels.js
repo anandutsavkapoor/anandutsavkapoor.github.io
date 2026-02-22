@@ -164,8 +164,8 @@
       el.className = "pixel-float";
       el.style.background = palette[Math.floor(Math.random() * palette.length)];
       if (big) {
-        el.style.width = "8px";
-        el.style.height = "8px";
+        el.style.width = "5px";
+        el.style.height = "5px";
       }
       document.body.appendChild(el);
       els.push(el);
@@ -173,6 +173,7 @@
     }
 
     var useTT = Math.random() < 0.5; // 50 % T&T flyby, 50 % damped N-body
+    var kickMassRef = 1.0; // scaled in N-body branch to keep Δv N-invariant
 
     if (useTT) {
       // ── T&T flyby ICs: two disk galaxies on a parabolic encounter ─────────
@@ -283,6 +284,10 @@
       var massScale = 100 / totalM_body;
       for (var i = 0; i < N_body; i++) tempPos[i].m *= massScale;
       totalM_body = 100;
+      // Scale feedback kicks so Δv is the same regardless of N:
+      // fk = feedbackKick * kickMassRef / m_body, and m_body = totalM/N, so
+      // kickMassRef = totalM_body / N_body restores Δv ≈ feedbackKick (as if m=1).
+      kickMassRef = totalM_body / N_body;
 
       // Second pass: assign orbital velocities then add particles
       var speedFactor = 0.5 + Math.random() * 0.5;
@@ -439,7 +444,22 @@
               dcenterY = wy / wm;
             }
           }
-          // Kick particles within kickRadius of the density centre
+          // Compute distances from density centre for all particles.
+          // p90 of these distances is used as the effective kick radius so that
+          // outlier particles (well outside the dense core) are never kicked.
+          var dcDistArr = new Array(n);
+          for (var k = 0; k < n; k++) {
+            var ddx = particles[k].x - dcenterX;
+            var ddy = particles[k].y - dcenterY;
+            dcDistArr[k] = Math.sqrt(ddx * ddx + ddy * ddy);
+          }
+          var dcDistSorted = dcDistArr.slice().sort(function (a, b) {
+            return a - b;
+          });
+          var p90_dc = dcDistSorted[Math.floor(n * 0.9)];
+          var effectiveKickRad = Math.min(p90_dc, kickRadius);
+          var effectiveKickRadSq = effectiveKickRad * effectiveKickRad;
+          // Kick particles within the effective radius of the density centre
           var kickBoost =
             postRescueKicksLeft > 0
               ? useTT
@@ -448,12 +468,12 @@
               : 1.0;
           var kickDpx = 0;
           var kickDpy = 0;
+          var kickMass = 0;
           for (var k = 0; k < n; k++) {
+            var rc = dcDistArr[k];
+            if (rc * rc > effectiveKickRadSq) continue;
             var dcx = particles[k].x - dcenterX;
             var dcy = particles[k].y - dcenterY;
-            var rc2 = dcx * dcx + dcy * dcy;
-            if (rc2 > kickRadSq) continue;
-            var rc = Math.sqrt(rc2);
             // Exponential radial profile centred on density peak
             var kickScale = Math.exp(-rc / feedbackLambda);
             // Velocity factor: kick slow (CoM-frame) particles more strongly
@@ -470,8 +490,8 @@
             }
             var vx0 = particles[k].vx;
             var vy0 = particles[k].vy;
-            // Force-based kick: same force on all → Δv = F/m; heavy nuclei barely move
-            var fk = (feedbackKick * kickBoost * concFactor * kickScale * velFactor) / particles[k].m;
+            // Force-based kick: Δv = F/m; kickMassRef normalises N-body to m=1 equivalent
+            var fk = (feedbackKick * kickMassRef * kickBoost * concFactor * kickScale * velFactor) / particles[k].m;
             particles[k].vx += fk * rx;
             particles[k].vy += fk * ry;
             var spAfter = Math.sqrt(particles[k].vx * particles[k].vx + particles[k].vy * particles[k].vy);
@@ -482,13 +502,18 @@
             // Accumulate actual momentum change (after speed cap)
             kickDpx += particles[k].m * (particles[k].vx - vx0);
             kickDpy += particles[k].m * (particles[k].vy - vy0);
+            kickMass += particles[k].m;
           }
-          // Conserve total momentum: remove the net impulse from all particles
-          var kickDvcmx = kickDpx / totalM;
-          var kickDvcmy = kickDpy / totalM;
-          for (var k = 0; k < n; k++) {
-            particles[k].vx -= kickDvcmx;
-            particles[k].vy -= kickDvcmy;
+          // Conserve momentum within the kicked cluster only — outlier particles
+          // are untouched so they never receive a spurious correction nudge.
+          if (kickMass > 0) {
+            var kickDvcmx = kickDpx / kickMass;
+            var kickDvcmy = kickDpy / kickMass;
+            for (var k = 0; k < n; k++) {
+              if (dcDistArr[k] * dcDistArr[k] > effectiveKickRadSq) continue;
+              particles[k].vx -= kickDvcmx;
+              particles[k].vy -= kickDvcmy;
+            }
           }
           feedbackCooldown = feedbackCooldownMax;
           if (postRescueKicksLeft > 0) postRescueKicksLeft--;
