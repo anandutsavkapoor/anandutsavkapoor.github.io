@@ -25,7 +25,7 @@ latest_posts:
   limit: 3 # leave blank to include all the blog posts
 ---
 
-I am a postdoctoral researcher at [Ghent University](https://www.ugent.be/), broadly interested in galaxy evolution and the physical processes that shape galaxies across cosmic time.
+I am broadly interested in galaxy evolution and the physical processes that shape galaxies across cosmic time.
 
 On the simulation side, I develop and apply radiative transfer methods using the [SKIRT](https://skirt.ugent.be) code to generate realistic synthetic observations of simulated galaxies, covering dust emission, ionized gas, and emission lines. I am the lead developer of [TODDLERS](https://academic.oup.com/mnras/article/526/3/3871/7287615), a UV-to-millimetre emission library for star-forming regions integrated within SKIRT. This work enables direct comparisons between cosmological simulations and photometric and spectroscopic surveys across the full electromagnetic spectrum.
 
