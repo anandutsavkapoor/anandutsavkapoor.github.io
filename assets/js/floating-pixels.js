@@ -175,6 +175,7 @@
     var useTT = Math.random() < 0.5; // 50 % T&T flyby, 50 % damped N-body
     var kickMassRef = 1.0; // scaled in N-body branch to keep Δv N-invariant
     var mergeCapMass = Infinity; // set in N-body branch: 100 × m_single
+    var mergeRemnantCap = Infinity; // set in N-body branch: 200 × m_single (total across all remnants)
 
     if (useTT) {
       // ── T&T flyby ICs: two disk galaxies on a parabolic encounter ─────────
@@ -291,6 +292,8 @@
       kickMassRef = totalM_body / N_body;
       // Merged particles are capped at 100× the base single-particle mass.
       mergeCapMass = 100 * kickMassRef;
+      // Total mass held across ALL merger remnants is capped at 200× m_single.
+      mergeRemnantCap = 200 * kickMassRef;
 
       // Second pass: assign orbital velocities then add particles
       var speedFactor = 0.5 + Math.random() * 0.5;
@@ -634,22 +637,29 @@
           }
           var p1 = particles[best1],
             p2 = particles[best2];
-          var combinedM = p1.m + p2.m;
-          // Mass-weighted position and momentum, mass capped at mergeCapMass
-          p1.x = (p1.x * p1.m + p2.x * p2.m) / combinedM;
-          p1.y = (p1.y * p1.m + p2.y * p2.m) / combinedM;
-          p1.vx = (p1.vx * p1.m + p2.vx * p2.m) / combinedM;
-          p1.vy = (p1.vy * p1.m + p2.vy * p2.m) / combinedM;
-          p1.m = Math.min(combinedM, mergeCapMass);
-          // Remove merged-away particle from DOM and arrays
-          document.body.removeChild(els[best2]);
-          particles.splice(best2, 1);
-          els.splice(best2, 1);
-          // Ramp feedbackKick additively; once at 3× baseline, sample uniform [1×, 3×]
-          if (feedbackKick < 3 * feedbackKickInit) {
-            feedbackKick = Math.min(feedbackKick + feedbackKickInit * 0.2, 3 * feedbackKickInit);
-          } else {
-            feedbackKick = feedbackKickInit * (1 + Math.random() * 2);
+          // Gate on total remnant mass cap: sum mass of all above-baseline particles
+          var totalRemnantMass = 0;
+          for (var ri = 0; ri < particles.length; ri++) {
+            if (particles[ri].m > kickMassRef) totalRemnantMass += particles[ri].m;
+          }
+          if (totalRemnantMass + p2.m <= mergeRemnantCap) {
+            var combinedM = p1.m + p2.m;
+            // Mass-weighted position and momentum, mass capped at mergeCapMass
+            p1.x = (p1.x * p1.m + p2.x * p2.m) / combinedM;
+            p1.y = (p1.y * p1.m + p2.y * p2.m) / combinedM;
+            p1.vx = (p1.vx * p1.m + p2.vx * p2.m) / combinedM;
+            p1.vy = (p1.vy * p1.m + p2.vy * p2.m) / combinedM;
+            p1.m = Math.min(combinedM, mergeCapMass);
+            // Remove merged-away particle from DOM and arrays
+            document.body.removeChild(els[best2]);
+            particles.splice(best2, 1);
+            els.splice(best2, 1);
+            // Ramp feedbackKick additively; once at 3× baseline, sample uniform [1×, 3×]
+            if (feedbackKick < 3 * feedbackKickInit) {
+              feedbackKick = Math.min(feedbackKick + feedbackKickInit * 0.2, 3 * feedbackKickInit);
+            } else {
+              feedbackKick = feedbackKickInit * (1 + Math.random() * 2);
+            }
           }
         }
       }
