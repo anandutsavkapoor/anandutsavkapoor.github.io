@@ -359,14 +359,15 @@
     var postRescueKicksLeft = 0; // remaining post-rescue kicks with boosted strength
     var particleOpacity = 0.45;
 
-    // Adaptive zoom — positions computed in JS; particle DOM sizes stay fixed
+    // Adaptive zoom — all tracking starts only after totalFeedbackFired >= 3
     var zoomLevel = 1.0;
-    var maxZoom = 1.5 + Math.random() * 1.0; // 1.5–2.5× ceiling (randomised per load)
+    var maxZoom = 2.0; // adaptive — set from structure radius each frame
+    var smoothRadius = -1; // -1 = uninitialised; mass-weighted RMS radius from CoM
     var emaKE_slow = -1; // τ≈5.5 s (α=0.003); -1 = uninitialised
     var emaKE_verySlow = -1; // τ≈17 s (α=0.001); ratio slow/verySlow signals stationarity
     var totalFeedbackFired = 0;
-    var smoothCmx = W * 0.5; // EMA of CoM used as zoom pivot — absorbs wrap jitter
-    var smoothCmy = H * 0.5;
+    var smoothCmx = -1; // -1 = uninitialised; snapped to cmx on gate opening (no initial drift)
+    var smoothCmy = -1;
 
     function gravStep() {
       var n = particles.length;
@@ -684,6 +685,9 @@
 
       if (particleOpacity < 0.45) particleOpacity = Math.min(0.45, particleOpacity + 0.45 / 40);
 
+      // 0 = raw positions (gate closed or zoom=1), 1 = fully CoM-centred+zoomed
+      var zoomFrac = smoothCmx < 0 ? 0 : Math.min(1.0, (zoomLevel - 1.0) / Math.max(0.001, maxZoom - 1.0));
+
       for (var i = 0; i < n; i++) {
         particles[i].vx -= vcmx;
         particles[i].vy -= vcmy;
@@ -696,44 +700,61 @@
         if (particles[i].y < bbox.y0) particles[i].y += Ly;
         else if (particles[i].y >= bbox.y1) particles[i].y -= Ly;
 
-        // Zoom is applied in JS so particle DOM sizes stay fixed (no wrapDiv scale)
-        var sx = Lx * 0.5 + (particles[i].x - smoothCmx) * zoomLevel;
-        var sy = Ly * 0.5 + (particles[i].y - smoothCmy) * zoomLevel;
-        els[i].style.left = sx - particles[i].hs + "px";
-        els[i].style.top = sy - particles[i].hs + "px";
+        // Blend: raw position at zoomFrac=0; CoM-centred scaled position at zoomFrac=1
+        var targetSx = Lx * 0.5 + (particles[i].x - smoothCmx) * zoomLevel;
+        var targetSy = Ly * 0.5 + (particles[i].y - smoothCmy) * zoomLevel;
+        els[i].style.left = particles[i].x + zoomFrac * (targetSx - particles[i].x) - particles[i].hs + "px";
+        els[i].style.top = particles[i].y + zoomFrac * (targetSy - particles[i].y) - particles[i].hs + "px";
         els[i].style.opacity = particleOpacity;
       }
 
-      // Update smooth CoM (EMA — absorbs per-frame jitter from periodic wrap)
-      smoothCmx += (cmx - smoothCmx) * 0.03;
-      smoothCmy += (cmy - smoothCmy) * 0.03;
+      // Everything below is gated on totalFeedbackFired >= 3
+      if (totalFeedbackFired >= 3) {
+        // Snap smoothCmx to cmx on first entry (no initial pan); then track with EMA
+        if (smoothCmx < 0) {
+          smoothCmx = cmx;
+          smoothCmy = cmy;
+        } else {
+          smoothCmx += (cmx - smoothCmx) * 0.03;
+          smoothCmy += (cmy - smoothCmy) * 0.03;
+        }
 
-      // Two-timescale KE stationarity: slow (τ≈5.5 s) vs very-slow (τ≈17 s)
-      // Normal kicks barely perturb emaKE_slow; secular changes (heating/cooling) cause divergence.
-      // Zoom-in:  ratio ∈ [0.85, 1.15] AND 3+ feedback cycles — true equilibrium
-      // Zoom-out: ratio > 1.15 — system heating/expanding
-      // Hold:     ratio < 0.85 — system cooling/contracting (damping); keep current zoom
-      var KE_zoom = 0;
-      for (var zi = 0; zi < n; zi++) {
-        KE_zoom += particles[zi].m * (particles[zi].vx * particles[zi].vx + particles[zi].vy * particles[zi].vy);
+        // Structure radius: mass-weighted RMS distance from CoM
+        var rSumSq = 0;
+        for (var zi = 0; zi < n; zi++) {
+          var rdx = particles[zi].x - cmx;
+          var rdy = particles[zi].y - cmy;
+          rSumSq += (rdx * rdx + rdy * rdy) * particles[zi].m;
+        }
+        var rRMS = Math.sqrt(rSumSq / (totalM + 1e-9));
+        if (smoothRadius < 0) smoothRadius = rRMS;
+        smoothRadius += (rRMS - smoothRadius) * 0.003; // τ≈5.5 s
+        // Zoom so structure fills ~35% of the shorter viewport dimension
+        maxZoom = Math.max(1.2, Math.min(3.5, (Math.min(Lx, Ly) * 0.35) / (smoothRadius + 1e-9)));
+
+        // Two-timescale KE stationarity
+        var KE_zoom = 0;
+        for (var zi2 = 0; zi2 < n; zi2++) {
+          KE_zoom += particles[zi2].m * (particles[zi2].vx * particles[zi2].vx + particles[zi2].vy * particles[zi2].vy);
+        }
+        if (emaKE_slow < 0) {
+          emaKE_slow = KE_zoom;
+          emaKE_verySlow = KE_zoom;
+        }
+        emaKE_slow += (KE_zoom - emaKE_slow) * 0.003;
+        emaKE_verySlow += (KE_zoom - emaKE_verySlow) * 0.001;
+        var keRatio = emaKE_slow / (emaKE_verySlow + 1e-9);
+        var zoomDesired;
+        if (keRatio > 1.15) {
+          zoomDesired = 1.0; // heating/expanding — zoom out
+        } else if (keRatio > 0.85) {
+          zoomDesired = maxZoom; // equilibrium — zoom in
+        } else {
+          zoomDesired = zoomLevel; // contracting/cooling — hold
+        }
+        var zoomRate = zoomDesired > zoomLevel ? 0.003 : 0.008;
+        zoomLevel += (zoomDesired - zoomLevel) * zoomRate;
       }
-      if (emaKE_slow < 0) {
-        emaKE_slow = KE_zoom;
-        emaKE_verySlow = KE_zoom;
-      }
-      emaKE_slow += (KE_zoom - emaKE_slow) * 0.003;
-      emaKE_verySlow += (KE_zoom - emaKE_verySlow) * 0.001;
-      var keRatio = emaKE_slow / (emaKE_verySlow + 1e-9);
-      var zoomDesired;
-      if (keRatio > 1.15) {
-        zoomDesired = 1.0; // heating — zoom out
-      } else if (totalFeedbackFired >= 3 && keRatio > 0.85) {
-        zoomDesired = maxZoom; // equilibrium (or cooling) after transient — zoom in
-      } else {
-        zoomDesired = zoomLevel; // initial transient — hold
-      }
-      var zoomRate = zoomDesired > zoomLevel ? 0.003 : 0.008;
-      zoomLevel += (zoomDesired - zoomLevel) * zoomRate;
 
       if (!simPaused) requestAnimationFrame(gravStep);
     }
