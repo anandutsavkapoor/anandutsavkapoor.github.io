@@ -23,6 +23,13 @@ ninja.data = [{
           handler: () => {
             window.location.href = "/projects/";
           },
+        },{id: "nav-background-simulations",
+          title: "background simulations",
+          description: "The physics behind the website&#39;s background animations.",
+          section: "Navigation",
+          handler: () => {
+            window.location.href = "/background/";
+          },
         },{id: "nav-cv",
           title: "CV",
           description: "",
