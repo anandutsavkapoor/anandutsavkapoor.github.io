@@ -369,6 +369,8 @@
     var smoothCmx = -1; // -1 = uninitialised; snapped to cmx on gate opening (no initial drift)
     var smoothCmy = -1;
     var heatingFrames = 0; // leaky counter; zoom-out only fires when this reaches 120 (~2 s)
+    var cmSmoothRate = useTT ? 0.03 : 0.01; // N-body seeding shifts CoM → slower pivot (τ≈1.7 s)
+    var smoothMaxZoom = -1; // EMA of maxZoom — absorbs radius fluctuations from outlier kicks
 
     function gravStep() {
       var n = particles.length;
@@ -716,8 +718,8 @@
           smoothCmx = cmx;
           smoothCmy = cmy;
         } else {
-          smoothCmx += (cmx - smoothCmx) * 0.03;
-          smoothCmy += (cmy - smoothCmy) * 0.03;
+          smoothCmx += (cmx - smoothCmx) * cmSmoothRate;
+          smoothCmy += (cmy - smoothCmy) * cmSmoothRate;
         }
 
         // Structure radius: mass-weighted RMS distance from CoM
@@ -730,8 +732,12 @@
         var rRMS = Math.sqrt(rSumSq / (totalM + 1e-9));
         if (smoothRadius < 0) smoothRadius = rRMS;
         smoothRadius += (rRMS - smoothRadius) * 0.003; // τ≈5.5 s
-        // Zoom so structure fills ~35% of the shorter viewport dimension
-        maxZoom = Math.max(1.2, Math.min(3.5, (Math.min(Lx, Ly) * 0.35) / (smoothRadius + 1e-9)));
+        // Smooth maxZoom with slow EMA — prevents zoom target from jumping when
+        // outlier particles inflate the RMS radius after feedback kicks
+        var rawMaxZoom = Math.max(1.2, Math.min(3.5, (Math.min(Lx, Ly) * 0.35) / (smoothRadius + 1e-9)));
+        if (smoothMaxZoom < 0) smoothMaxZoom = rawMaxZoom;
+        smoothMaxZoom += (rawMaxZoom - smoothMaxZoom) * 0.003;
+        maxZoom = smoothMaxZoom;
 
         // Two-timescale KE stationarity
         var KE_zoom = 0;
