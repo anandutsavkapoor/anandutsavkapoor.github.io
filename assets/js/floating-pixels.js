@@ -119,6 +119,29 @@
 
     var particles = [];
     var els = [];
+    var simPaused = false;
+
+    // Pause / resume toggle button
+    var toggleBtn = document.createElement("button");
+    toggleBtn.textContent = "pause sim";
+    toggleBtn.style.cssText =
+      "position:fixed;bottom:1.2rem;right:1.2rem;z-index:200;" +
+      "background:none;border:1px solid currentColor;border-radius:3px;" +
+      "padding:3px 8px;font:11px/1.4 'DM Sans',sans-serif;cursor:pointer;" +
+      "opacity:0.35;transition:opacity .2s;color:inherit;pointer-events:auto;";
+    toggleBtn.addEventListener("mouseenter", function () {
+      toggleBtn.style.opacity = "0.8";
+    });
+    toggleBtn.addEventListener("mouseleave", function () {
+      toggleBtn.style.opacity = simPaused ? "0.6" : "0.35";
+    });
+    toggleBtn.addEventListener("click", function () {
+      simPaused = !simPaused;
+      toggleBtn.textContent = simPaused ? "resume sim" : "pause sim";
+      toggleBtn.style.opacity = simPaused ? "0.6" : "0.35";
+      if (!simPaused) gravStep();
+    });
+    document.body.appendChild(toggleBtn);
 
     function getBBox() {
       return { x0: 0, y0: 0, x1: window.innerWidth, y1: window.innerHeight };
@@ -154,13 +177,13 @@
     if (useTT) {
       // ── T&T flyby ICs: two disk galaxies on a parabolic encounter ─────────
       var ringsPrim = [
-        { r: 40 + Math.random() * 20, n: 8 + Math.floor(Math.random() * 5) },
-        { r: 70 + Math.random() * 25, n: 12 + Math.floor(Math.random() * 5) },
-        { r: 110 + Math.random() * 30, n: 16 + Math.floor(Math.random() * 5) },
+        { r: 50 + Math.random() * 20, n: 80 + Math.floor(Math.random() * 20) },
+        { r: 85 + Math.random() * 25, n: 120 + Math.floor(Math.random() * 30) },
+        { r: 130 + Math.random() * 30, n: 160 + Math.floor(Math.random() * 40) },
       ];
       var ringsComp = [
-        { r: 30 + Math.random() * 15, n: 6 + Math.floor(Math.random() * 4) },
-        { r: 55 + Math.random() * 20, n: 10 + Math.floor(Math.random() * 4) },
+        { r: 35 + Math.random() * 15, n: 60 + Math.floor(Math.random() * 20) },
+        { r: 60 + Math.random() * 20, n: 80 + Math.floor(Math.random() * 30) },
       ];
 
       var r_peri = Math.min(W, H) * (0.15 + Math.random() * 0.15);
@@ -227,7 +250,7 @@
       addRings(nuc2x, nuc2y, v2x, v2y, ringsComp, colPurple);
     } else {
       // ── Damped N-body ICs: random scatter with Keplerian orbital velocities ─
-      var N_body = 60 + Math.floor(Math.random() * 60); // 60–120
+      var N_body = 400 + Math.floor(Math.random() * 200); // 400–600
       var cx0 = W * (0.5 + Math.random() * 0.3);
       var cy0 = H * (0.35 + Math.random() * 0.3);
       var scatterX = W * (0.12 + Math.random() * 0.12);
@@ -530,7 +553,7 @@
         els[i].style.opacity = particleOpacity;
       }
 
-      requestAnimationFrame(gravStep);
+      if (!simPaused) requestAnimationFrame(gravStep);
     }
 
     gravStep();
