@@ -156,7 +156,7 @@
 
     // Randomised physics — different every page load
     var G = 1.0 + Math.random() * 1.0; // 1.0–2.0
-    var softSq = 64 + Math.random() * 100; // ε = 8–13 px
+    var softSq = 144 + Math.random() * 236; // ε = 12–19 px
     var M_nuc = 60 + Math.random() * 40; // 60–100
 
     function addParticle(x, y, vx, vy, m, palette, big) {
