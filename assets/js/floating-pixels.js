@@ -337,9 +337,6 @@
     var collapseThreshold = Math.min(W, H) * (0.08 + Math.random() * 0.08);
     var feedbackKick = 2.0 + Math.random() * 1.0; // 2.0–3.0 px/frame
     var feedbackKickInit = feedbackKick; // baseline — additive ramp, cap 3×, then uniform [1×,3×]
-    var lastDcenterX = W * 0.5; // cached density centre — updated each kick event
-    var lastDcenterY = H * 0.5;
-    var pendingMerge = false; // set at rescue exit; merge fires at end of that frame
     var feedbackLambda = 3 + Math.random() * 7; // exponential scale length 3–10 px
     var maxSpeed = 4.0 + Math.random() * 2.0; // 4.0–6.0 px/frame
     var feedbackCooldown = 0;
@@ -422,8 +419,6 @@
           dists[i].idx = i;
           dists[i].r = Math.sqrt(dcx * dcx + dcy * dcy);
         }
-        // Mark stale slots (from prior merges) as far so they sort to the end
-        for (var si = n; si < dists.length; si++) dists[si].r = 1e9;
         dists.sort(function (a, b) {
           return a.r - b.r;
         });
@@ -460,9 +455,82 @@
               dcenterY = wy / wm;
             }
           }
-          // Cache density centre for use in post-rescue merge targeting
-          lastDcenterX = dcenterX;
-          lastDcenterY = dcenterY;
+          // Mass redistribution (N-body only): particle closest to density centre
+          // gains 5×m_single per collapse; that mass (+ momentum) is taken from
+          // the 8 nearest qualifying neighbours [0.25, 1] × m_single.
+          // Runs BEFORE the kick so force-based Δv=F/m sees the updated masses.
+          if (!useTT) {
+            var seedIdx = 0;
+            var minDcDist = Infinity;
+            for (var si = 0; si < n; si++) {
+              var sdx = particles[si].x - dcenterX;
+              var sdy = particles[si].y - dcenterY;
+              var sdist = sdx * sdx + sdy * sdy;
+              if (sdist < minDcDist) {
+                minDcDist = sdist;
+                seedIdx = si;
+              }
+            }
+            var seed = particles[seedIdx];
+            // Respect individual cap and total remnant cap
+            var totalRemMass = 0;
+            for (var ri = 0; ri < n; ri++) {
+              if (particles[ri].m > kickMassRef) totalRemMass += particles[ri].m;
+            }
+            var gainM = Math.min(5 * kickMassRef, mergeCapMass - seed.m, Math.max(0, mergeRemnantCap - totalRemMass));
+            if (gainM > 0) {
+              // Find 8 nearest neighbours with mass in (0.25, 1] × m_single
+              var nbrs = [];
+              for (var ni = 0; ni < n; ni++) {
+                if (ni === seedIdx) continue;
+                var nm = particles[ni].m;
+                if (nm > 0.25 * kickMassRef && nm <= kickMassRef) {
+                  var ndx = particles[ni].x - seed.x;
+                  var ndy = particles[ni].y - seed.y;
+                  nbrs.push({ idx: ni, d2: ndx * ndx + ndy * ndy });
+                }
+              }
+              nbrs.sort(function (a, b) {
+                return a.d2 - b.d2;
+              });
+              if (nbrs.length > 8) nbrs.length = 8;
+              if (nbrs.length > 0) {
+                var lossEach = gainM / nbrs.length;
+                // Accumulate transferred momentum for seed velocity update
+                var newSeedPx = seed.m * seed.vx;
+                var newSeedPy = seed.m * seed.vy;
+                var actualGain = 0;
+                for (var ei = 0; ei < nbrs.length; ei++) {
+                  var pn = particles[nbrs[ei].idx];
+                  var actualLoss = Math.min(lossEach, pn.m - 0.25 * kickMassRef);
+                  newSeedPx += actualLoss * pn.vx;
+                  newSeedPy += actualLoss * pn.vy;
+                  pn.m -= actualLoss;
+                  actualGain += actualLoss;
+                }
+                seed.m += actualGain;
+                // Update seed velocity to conserve momentum
+                seed.vx = newSeedPx / seed.m;
+                seed.vy = newSeedPy / seed.m;
+                // Update seed visual: triangle, size ∝ m^(1/3), clamped 5–14 px
+                if (seed.m > 1.5 * kickMassRef) {
+                  var seedSize = Math.min(14, Math.max(5, 5 * Math.pow(seed.m / kickMassRef, 1 / 3)));
+                  seed.hs = seedSize / 2;
+                  els[seedIdx].style.width = seedSize + "px";
+                  els[seedIdx].style.height = seedSize + "px";
+                  els[seedIdx].style.borderRadius = "0";
+                  els[seedIdx].style.clipPath = "polygon(50% 0%, 0% 100%, 100% 100%)";
+                }
+                // Ramp feedbackKick when mass transfer occurs
+                if (feedbackKick < 3 * feedbackKickInit) {
+                  feedbackKick = Math.min(feedbackKick + feedbackKickInit * 0.2, 3 * feedbackKickInit);
+                } else {
+                  feedbackKick = feedbackKickInit * (1 + Math.random() * 2);
+                }
+              }
+            }
+          }
+
           // Compute distances from density centre for all particles.
           // p90 of these distances is used as the effective kick radius so that
           // outlier particles (well outside the dense core) are never kicked.
@@ -565,7 +633,6 @@
           feedbackCooldown = 0;
           collapseCheckFrame = collapseCheckEvery; // force check on next frame
           postRescueKicksLeft = 3;
-          if (!useTT) pendingMerge = true; // merge two core particles at end of frame
         }
       } else {
         dampFrame++;
@@ -607,72 +674,6 @@
         els[i].style.left = particles[i].x - particles[i].hs + "px";
         els[i].style.top = particles[i].y - particles[i].hs + "px";
         els[i].style.opacity = particleOpacity;
-      }
-
-      // Post-rescue merge: absorb the two particles closest to the density centre.
-      // Only runs in N-body mode, once per rescue event.
-      if (!useTT && pendingMerge) {
-        pendingMerge = false;
-        var n_now = particles.length;
-        var best1 = 0,
-          best2 = 1,
-          bestR1 = Infinity,
-          bestR2 = Infinity;
-        for (var mi = 0; mi < n_now; mi++) {
-          var mdx = particles[mi].x - lastDcenterX;
-          var mdy = particles[mi].y - lastDcenterY;
-          var mr = mdx * mdx + mdy * mdy; // squared distance, no sqrt needed
-          if (mr < bestR1) {
-            bestR2 = bestR1;
-            best2 = best1;
-            bestR1 = mr;
-            best1 = mi;
-          } else if (mr < bestR2) {
-            bestR2 = mr;
-            best2 = mi;
-          }
-        }
-        if (best1 !== best2) {
-          // Keep best1 < best2 so the splice index is predictable
-          if (best1 > best2) {
-            var tmp = best1;
-            best1 = best2;
-            best2 = tmp;
-          }
-          var p1 = particles[best1],
-            p2 = particles[best2];
-          // Gate on total remnant mass cap: sum mass of all above-baseline particles
-          var totalRemnantMass = 0;
-          for (var ri = 0; ri < particles.length; ri++) {
-            if (particles[ri].m > kickMassRef) totalRemnantMass += particles[ri].m;
-          }
-          if (totalRemnantMass + p2.m <= mergeRemnantCap) {
-            var combinedM = p1.m + p2.m;
-            // Mass-weighted position and momentum, mass capped at mergeCapMass
-            p1.x = (p1.x * p1.m + p2.x * p2.m) / combinedM;
-            p1.y = (p1.y * p1.m + p2.y * p2.m) / combinedM;
-            p1.vx = (p1.vx * p1.m + p2.vx * p2.m) / combinedM;
-            p1.vy = (p1.vy * p1.m + p2.vy * p2.m) / combinedM;
-            p1.m = Math.min(combinedM, mergeCapMass);
-            // Update survivor to triangle shape, size ∝ m^(1/3), clamped 5–14 px
-            var seedSize = Math.min(14, Math.max(5, 5 * Math.pow(p1.m / kickMassRef, 1 / 3)));
-            p1.hs = seedSize / 2;
-            els[best1].style.width = seedSize + "px";
-            els[best1].style.height = seedSize + "px";
-            els[best1].style.borderRadius = "0";
-            els[best1].style.clipPath = "polygon(50% 0%, 0% 100%, 100% 100%)";
-            // Remove merged-away particle from DOM and arrays
-            document.body.removeChild(els[best2]);
-            particles.splice(best2, 1);
-            els.splice(best2, 1);
-            // Ramp feedbackKick additively; once at 3× baseline, sample uniform [1×, 3×]
-            if (feedbackKick < 3 * feedbackKickInit) {
-              feedbackKick = Math.min(feedbackKick + feedbackKickInit * 0.2, 3 * feedbackKickInit);
-            } else {
-              feedbackKick = feedbackKickInit * (1 + Math.random() * 2);
-            }
-          }
-        }
       }
 
       if (!simPaused) requestAnimationFrame(gravStep);
