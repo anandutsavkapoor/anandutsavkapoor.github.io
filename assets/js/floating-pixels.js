@@ -372,7 +372,7 @@
         });
         if (dists[Math.floor(n * 0.9)].r < collapseThreshold) {
           // Concentration factor: amplify kicks when particles pile up at CoM.
-          // p50 ≪ collapseThreshold → concFactor → large (capped at 6×).
+          // p50 ≪ collapseThreshold → concFactor → large (sublinear √ scaling, capped at 9×).
           var p50 = dists[Math.floor(n * 0.5)].r;
           var concFactor = Math.min(Math.sqrt(collapseThreshold / (p50 + Math.sqrt(softSq))), 9.0);
           // Density centre: mass-weighted centre of the most concentrated cluster.
@@ -404,6 +404,8 @@
             }
           }
           // Kick particles within kickRadius of the density centre
+          var kickDpx = 0;
+          var kickDpy = 0;
           for (var k = 0; k < n; k++) {
             var dcx = particles[k].x - dcenterX;
             var dcy = particles[k].y - dcenterY;
@@ -424,6 +426,8 @@
               rx = dcx / rc; // radially outward from density centre
               ry = dcy / rc;
             }
+            var vx0 = particles[k].vx;
+            var vy0 = particles[k].vy;
             particles[k].vx += feedbackKick * concFactor * kickScale * velFactor * rx;
             particles[k].vy += feedbackKick * concFactor * kickScale * velFactor * ry;
             var spAfter = Math.sqrt(particles[k].vx * particles[k].vx + particles[k].vy * particles[k].vy);
@@ -431,6 +435,16 @@
               particles[k].vx = (particles[k].vx / spAfter) * maxSpeed;
               particles[k].vy = (particles[k].vy / spAfter) * maxSpeed;
             }
+            // Accumulate actual momentum change (after speed cap)
+            kickDpx += particles[k].m * (particles[k].vx - vx0);
+            kickDpy += particles[k].m * (particles[k].vy - vy0);
+          }
+          // Conserve total momentum: remove the net impulse from all particles
+          var kickDvcmx = kickDpx / totalM;
+          var kickDvcmy = kickDpy / totalM;
+          for (var k = 0; k < n; k++) {
+            particles[k].vx -= kickDvcmx;
+            particles[k].vy -= kickDvcmy;
           }
           feedbackCooldown = feedbackCooldownMax;
           feedbackCount++;
