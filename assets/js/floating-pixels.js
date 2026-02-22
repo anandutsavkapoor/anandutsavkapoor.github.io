@@ -477,9 +477,9 @@
             for (var ri = 0; ri < n; ri++) {
               if (particles[ri].m > kickMassRef) totalRemMass += particles[ri].m;
             }
-            var gainM = Math.min(5 * kickMassRef, mergeCapMass - seed.m, Math.max(0, mergeRemnantCap - totalRemMass));
+            var gainM = Math.min(seed.m, mergeCapMass - seed.m, Math.max(0, mergeRemnantCap - totalRemMass));
             if (gainM > 0) {
-              // Find 8 nearest neighbours with mass in (0.25, 1] × m_single
+              // Find 16 nearest neighbours with mass in (0.25, 1] × m_single
               var nbrs = [];
               for (var ni = 0; ni < n; ni++) {
                 if (ni === seedIdx) continue;
@@ -493,7 +493,7 @@
               nbrs.sort(function (a, b) {
                 return a.d2 - b.d2;
               });
-              if (nbrs.length > 8) nbrs.length = 8;
+              if (nbrs.length > 16) nbrs.length = 16;
               if (nbrs.length > 0) {
                 var lossEach = gainM / nbrs.length;
                 // Accumulate transferred momentum for seed velocity update
