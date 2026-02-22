@@ -374,7 +374,7 @@
           // Concentration factor: amplify kicks when particles pile up at CoM.
           // p50 ≪ collapseThreshold → concFactor → large (capped at 6×).
           var p50 = dists[Math.floor(n * 0.5)].r;
-          var concFactor = Math.min(collapseThreshold / (p50 + Math.sqrt(softSq)), 6.0);
+          var concFactor = Math.min(Math.sqrt(collapseThreshold / (p50 + Math.sqrt(softSq))), 9.0);
           // Density centre: mass-weighted centre of the most concentrated cluster.
           // O(N²) search — fires at most once per cooldown (6–8 s), negligible cost.
           var kickRadius = feedbackLambda * 3;
