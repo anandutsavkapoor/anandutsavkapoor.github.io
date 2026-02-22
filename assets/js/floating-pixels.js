@@ -123,7 +123,7 @@
 
     // Pause / resume toggle button
     var toggleBtn = document.createElement("button");
-    toggleBtn.textContent = "pause sim";
+    toggleBtn.textContent = "Pause Simulation";
     toggleBtn.style.cssText =
       "position:fixed;bottom:1.2rem;right:1.2rem;z-index:200;" +
       "background:none;border:1px solid currentColor;border-radius:3px;" +
@@ -137,7 +137,7 @@
     });
     toggleBtn.addEventListener("click", function () {
       simPaused = !simPaused;
-      toggleBtn.textContent = simPaused ? "resume sim" : "pause sim";
+      toggleBtn.textContent = simPaused ? "Resume Simulation" : "Pause Simulation";
       toggleBtn.style.opacity = simPaused ? "0.6" : "0.35";
       if (!simPaused) gravStep();
     });
