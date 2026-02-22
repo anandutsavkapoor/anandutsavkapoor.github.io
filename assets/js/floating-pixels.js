@@ -154,6 +154,11 @@
     var W = window.innerWidth;
     var H = window.innerHeight;
 
+    // Particle container — zoom is applied via CSS transform so physics is untouched
+    var wrapDiv = document.createElement("div");
+    wrapDiv.style.cssText = "position:fixed;left:0;top:0;width:0;height:0;transform-origin:0 0;will-change:transform;";
+    document.body.appendChild(wrapDiv);
+
     // Randomised physics — different every page load
     var G = 1.0 + Math.random() * 1.0; // 1.0–2.0
     var softSq = 144 + Math.random() * 236; // ε = 12–19 px
@@ -171,7 +176,7 @@
         el.style.clipPath = "polygon(50% 0%, 0% 100%, 100% 100%)";
         hs = 3.5;
       }
-      document.body.appendChild(el);
+      wrapDiv.appendChild(el);
       els.push(el);
       particles.push({ x: x, y: y, vx: vx, vy: vy, m: m, hs: hs });
     }
@@ -353,6 +358,12 @@
     var KE_preDamp = 0; // kinetic energy snapshot taken when rescue damping activates
     var postRescueKicksLeft = 0; // remaining post-rescue kicks with boosted strength
     var particleOpacity = 0.45;
+
+    // Zoom-in once stationarity is reached (3 feedback cycles ≈ 20–30 s of dynamics)
+    var zoomLevel = 1.0;
+    var zoomTarget = 2.0 + Math.random() * 1.5; // 2.0–3.5×
+    var zoomTriggered = false;
+    var totalFeedbackFired = 0;
 
     function gravStep() {
       var n = particles.length;
@@ -613,6 +624,8 @@
             }
           }
           feedbackCooldown = feedbackCooldownMax;
+          totalFeedbackFired++;
+          if (!zoomTriggered && totalFeedbackFired >= 3) zoomTriggered = true;
           if (postRescueKicksLeft > 0) postRescueKicksLeft--;
           feedbackCount++;
           if (feedbackCount >= feedbackCountThreshold && rescueDampFrames === 0) {
@@ -685,6 +698,15 @@
         els[i].style.top = particles[i].y - particles[i].hs + "px";
         els[i].style.opacity = particleOpacity;
       }
+
+      // Smooth zoom toward target once stationarity is declared
+      if (zoomTriggered && zoomLevel < zoomTarget) {
+        zoomLevel += (zoomTarget - zoomLevel) * 0.004;
+      }
+      // Center view on CoM and scale — at zoom=1 this just centers CoM on screen
+      var tx = Lx * 0.5 - cmx * zoomLevel;
+      var ty = Ly * 0.5 - cmy * zoomLevel;
+      wrapDiv.style.transform = "translate(" + tx + "px," + ty + "px) scale(" + zoomLevel + ")";
 
       if (!simPaused) requestAnimationFrame(gravStep);
     }
