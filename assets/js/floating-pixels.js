@@ -163,13 +163,17 @@
       var el = document.createElement("div");
       el.className = "pixel-float";
       el.style.background = palette[Math.floor(Math.random() * palette.length)];
+      var hs = 1.5; // half-size for centering (default: 3px / 2)
       if (big) {
-        el.style.width = "5px";
-        el.style.height = "5px";
+        el.style.width = "7px";
+        el.style.height = "7px";
+        el.style.borderRadius = "0";
+        el.style.clipPath = "polygon(50% 0%, 0% 100%, 100% 100%)";
+        hs = 3.5;
       }
       document.body.appendChild(el);
       els.push(el);
-      particles.push({ x: x, y: y, vx: vx, vy: vy, m: m });
+      particles.push({ x: x, y: y, vx: vx, vy: vy, m: m, hs: hs });
     }
 
     var useTT = Math.random() < 0.5; // 50 % T&T flyby, 50 % damped N-body
@@ -600,8 +604,8 @@
         if (particles[i].y < bbox.y0) particles[i].y += Ly;
         else if (particles[i].y >= bbox.y1) particles[i].y -= Ly;
 
-        els[i].style.left = particles[i].x - 2.5 + "px";
-        els[i].style.top = particles[i].y - 2.5 + "px";
+        els[i].style.left = particles[i].x - particles[i].hs + "px";
+        els[i].style.top = particles[i].y - particles[i].hs + "px";
         els[i].style.opacity = particleOpacity;
       }
 
@@ -650,6 +654,13 @@
             p1.vx = (p1.vx * p1.m + p2.vx * p2.m) / combinedM;
             p1.vy = (p1.vy * p1.m + p2.vy * p2.m) / combinedM;
             p1.m = Math.min(combinedM, mergeCapMass);
+            // Update survivor to triangle shape, size ∝ m^(1/3), clamped 5–14 px
+            var seedSize = Math.min(14, Math.max(5, 5 * Math.pow(p1.m / kickMassRef, 1 / 3)));
+            p1.hs = seedSize / 2;
+            els[best1].style.width = seedSize + "px";
+            els[best1].style.height = seedSize + "px";
+            els[best1].style.borderRadius = "0";
+            els[best1].style.clipPath = "polygon(50% 0%, 0% 100%, 100% 100%)";
             // Remove merged-away particle from DOM and arrays
             document.body.removeChild(els[best2]);
             particles.splice(best2, 1);
