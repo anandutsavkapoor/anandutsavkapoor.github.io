@@ -324,6 +324,9 @@
     var ay = new Float32Array(N);
     var dists = new Array(N);
     for (var i = 0; i < N; i++) dists[i] = { idx: i, r: 0 };
+    var SNAP_COLS = 8,
+      SNAP_ROWS = 8;
+    var snapGrid = new Float32Array(SNAP_COLS * SNAP_ROWS); // coarse grid for snap reference
     var collapseCheckEvery = 60; // check collapse once per second, not every frame
     var collapseCheckFrame = 0;
 
@@ -392,19 +395,31 @@
       cmx /= totalM;
       cmy /= totalM;
 
-      // Snap to centre if CoM drifts within 10 % of any viewport edge
-      var edgeMargin = Math.min(Lx, Ly) * 0.1;
-      if (cmx < bbox.x0 + edgeMargin || cmx > bbox.x1 - edgeMargin || cmy < bbox.y0 + edgeMargin || cmy > bbox.y1 - edgeMargin) {
-        var snapX = Lx * 0.5;
-        var snapY = Ly * 0.5;
-        var shiftX = snapX - cmx;
-        var shiftY = snapY - cmy;
+      // Snap to centre if the densest cell of an 8×8 coarse grid is on the border (~12.5%).
+      // O(N) bin pass — pre-allocated, no GC. Edge cell = trigger, no pixel margin needed.
+      snapGrid.fill(0);
+      for (var i = 0; i < n; i++) {
+        var gc = Math.min(SNAP_COLS - 1, Math.max(0, Math.floor(((particles[i].x - bbox.x0) / Lx) * SNAP_COLS)));
+        var gr = Math.min(SNAP_ROWS - 1, Math.max(0, Math.floor(((particles[i].y - bbox.y0) / Ly) * SNAP_ROWS)));
+        snapGrid[gr * SNAP_COLS + gc] += particles[i].m;
+      }
+      var bestCell = 0;
+      for (var ci = 1; ci < SNAP_COLS * SNAP_ROWS; ci++) {
+        if (snapGrid[ci] > snapGrid[bestCell]) bestCell = ci;
+      }
+      var bestCol = bestCell % SNAP_COLS;
+      var bestRow = Math.floor(bestCell / SNAP_COLS);
+      if (bestCol === 0 || bestCol === SNAP_COLS - 1 || bestRow === 0 || bestRow === SNAP_ROWS - 1) {
+        var refX = bbox.x0 + ((bestCol + 0.5) / SNAP_COLS) * Lx;
+        var refY = bbox.y0 + ((bestRow + 0.5) / SNAP_ROWS) * Ly;
+        var shiftX = bbox.x0 + Lx * 0.5 - refX;
+        var shiftY = bbox.y0 + Ly * 0.5 - refY;
         for (var i = 0; i < n; i++) {
           particles[i].x += shiftX;
           particles[i].y += shiftY;
         }
-        cmx = snapX;
-        cmy = snapY;
+        cmx += shiftX;
+        cmy += shiftY;
         particleOpacity = 0; // fade out to mask the snap
       }
 
