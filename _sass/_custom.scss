@@ -17,8 +17,8 @@ html[data-theme="dark"] body::before {
 // Floating pixels — above grid
 .pixel-float {
   position: fixed;
-  width: 5px;
-  height: 5px;
+  width: 3px;
+  height: 3px;
   opacity: 0.45;
   z-index: 101;
   pointer-events: none;
