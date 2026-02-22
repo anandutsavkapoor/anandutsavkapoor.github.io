@@ -362,9 +362,8 @@
     // Adaptive zoom — positions computed in JS; particle DOM sizes stay fixed
     var zoomLevel = 1.0;
     var maxZoom = 1.5 + Math.random() * 1.0; // 1.5–2.5× ceiling (randomised per load)
-    var emaKE_slow = -1; // -1 = uninitialised; set on first frame
-    var emaKE_fast = -1;
-    var stationaryFrames = 0; // consecutive calm frames; zoom-in gate requires 600 (≈10 s)
+    var emaKE_slow = -1; // τ≈5.5 s (α=0.003); -1 = uninitialised
+    var emaKE_verySlow = -1; // τ≈17 s (α=0.001); ratio slow/verySlow signals stationarity
     var totalFeedbackFired = 0;
     var smoothCmx = W * 0.5; // EMA of CoM used as zoom pivot — absorbs wrap jitter
     var smoothCmy = H * 0.5;
@@ -709,26 +708,31 @@
       smoothCmx += (cmx - smoothCmx) * 0.03;
       smoothCmy += (cmy - smoothCmy) * 0.03;
 
-      // KE-based stationarity: compare fast EMA (τ≈0.3 s) to slow EMA (τ≈5.5 s)
+      // Two-timescale KE stationarity: slow (τ≈5.5 s) vs very-slow (τ≈17 s)
+      // Normal kicks barely perturb emaKE_slow; secular changes (heating/cooling) cause divergence.
+      // Zoom-in:  ratio ∈ [0.85, 1.15] AND 3+ feedback cycles — true equilibrium
+      // Zoom-out: ratio > 1.15 — system heating/expanding
+      // Hold:     ratio < 0.85 — system cooling/contracting (damping); keep current zoom
       var KE_zoom = 0;
       for (var zi = 0; zi < n; zi++) {
         KE_zoom += particles[zi].m * (particles[zi].vx * particles[zi].vx + particles[zi].vy * particles[zi].vy);
       }
       if (emaKE_slow < 0) {
         emaKE_slow = KE_zoom;
-        emaKE_fast = KE_zoom;
+        emaKE_verySlow = KE_zoom;
       }
       emaKE_slow += (KE_zoom - emaKE_slow) * 0.003;
-      emaKE_fast += (KE_zoom - emaKE_fast) * 0.05;
-      var keRatio = emaKE_fast / (emaKE_slow + 1e-9);
-      var isCalm = keRatio > 0.7 && keRatio < 1.5;
-      if (isCalm) {
-        stationaryFrames++;
+      emaKE_verySlow += (KE_zoom - emaKE_verySlow) * 0.001;
+      var keRatio = emaKE_slow / (emaKE_verySlow + 1e-9);
+      var zoomDesired;
+      if (keRatio > 1.15) {
+        zoomDesired = 1.0; // heating — zoom out
+      } else if (totalFeedbackFired >= 3 && keRatio > 0.85) {
+        zoomDesired = maxZoom; // equilibrium (or cooling) after transient — zoom in
       } else {
-        stationaryFrames = 0;
+        zoomDesired = zoomLevel; // initial transient — hold
       }
-      var zoomDesired = totalFeedbackFired >= 3 && stationaryFrames >= 600 ? maxZoom : 1.0;
-      var zoomRate = zoomDesired > zoomLevel ? 0.003 : 0.008; // creep in slowly, retreat faster
+      var zoomRate = zoomDesired > zoomLevel ? 0.003 : 0.008;
       zoomLevel += (zoomDesired - zoomLevel) * zoomRate;
 
       if (!simPaused) requestAnimationFrame(gravStep);
