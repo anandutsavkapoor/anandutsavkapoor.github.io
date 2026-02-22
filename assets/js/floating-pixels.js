@@ -276,7 +276,7 @@
       var cmx_body = 0;
       var cmy_body = 0;
       for (var i = 0; i < N_body; i++) {
-        var m_i = 0.8 + Math.random() * 0.4;
+        var m_i = 1.0;
         var x_i = cx0 + (Math.random() - 0.5) * 2 * scatterX;
         var y_i = cy0 + (Math.random() - 0.5) * 2 * scatterY;
         totalM_body += m_i;
