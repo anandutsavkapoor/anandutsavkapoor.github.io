@@ -269,7 +269,7 @@
       addRings(nuc2x, nuc2y, v2x, v2y, ringsComp, colPurple);
     } else {
       // ── Damped N-body ICs: random scatter with Keplerian orbital velocities ─
-      var N_body = 600 + Math.floor(Math.random() * 300); // 600–900
+      var N_body = 800;
       var cx0 = W * (0.5 + Math.random() * 0.3);
       var cy0 = H * (0.35 + Math.random() * 0.3);
       var scatterX = W * (0.12 + Math.random() * 0.12);
