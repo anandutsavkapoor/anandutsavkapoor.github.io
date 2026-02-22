@@ -546,7 +546,7 @@
             postRescueKicksLeft > 0
               ? useTT
                 ? 3.0 + Math.random() * 7.0 // T&T: 3–10×
-                : 1.0 + Math.random() * 4.0 // N-body: 1–5×
+                : 0.25 + Math.random() * 2.25 // N-body: 0.25–2.5×
               : 1.0;
           var kickDpx = 0;
           var kickDpy = 0;
