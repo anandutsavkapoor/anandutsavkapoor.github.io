@@ -296,6 +296,7 @@
     var rescueDampFrames = 0; // frames remaining in rescue phase (0 = inactive)
     var rescueDampDuration = 300 + Math.floor(Math.random() * 180); // 5–8 s
     var rescueDampStrength = 0.97 + Math.random() * 0.015; // 0.970–0.985
+    var KE_preDamp = 0; // kinetic energy snapshot taken when rescue damping activates
     var particleOpacity = 0.45;
 
     function gravStep() {
@@ -453,6 +454,11 @@
           if (feedbackCount >= feedbackCountThreshold && rescueDampFrames === 0) {
             rescueDampFrames = rescueDampDuration;
             feedbackCount = 0;
+            // Snapshot KE so we can end rescue damping once energy is sufficiently drained
+            KE_preDamp = 0;
+            for (var ki = 0; ki < n; ki++) {
+              KE_preDamp += 0.5 * particles[ki].m * (particles[ki].vx * particles[ki].vx + particles[ki].vy * particles[ki].vy);
+            }
           }
         }
       }
@@ -462,6 +468,17 @@
       if (rescueDampFrames > 0) {
         d = rescueDampStrength;
         rescueDampFrames--;
+        // End rescue damping early once KE has dropped to 1 % of pre-damping value;
+        // clear cooldown so the next collapse check can immediately fire a kick.
+        var KE_cur = 0;
+        for (var ki = 0; ki < n; ki++) {
+          KE_cur += 0.5 * particles[ki].m * (particles[ki].vx * particles[ki].vx + particles[ki].vy * particles[ki].vy);
+        }
+        if (KE_cur < 0.01 * KE_preDamp) {
+          rescueDampFrames = 0;
+          feedbackCooldown = 0;
+          collapseCheckFrame = collapseCheckEvery; // force check on next frame
+        }
       } else {
         dampFrame++;
         if (dampFrame > dampCycleOff) {
