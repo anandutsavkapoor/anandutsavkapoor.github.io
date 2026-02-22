@@ -174,6 +174,7 @@
 
     var useTT = Math.random() < 0.5; // 50 % T&T flyby, 50 % damped N-body
     var kickMassRef = 1.0; // scaled in N-body branch to keep Δv N-invariant
+    var mergeCapMass = Infinity; // set in N-body branch: 100 × m_single
 
     if (useTT) {
       // ── T&T flyby ICs: two disk galaxies on a parabolic encounter ─────────
@@ -288,6 +289,8 @@
       // fk = feedbackKick * kickMassRef / m_body, and m_body = totalM/N, so
       // kickMassRef = totalM_body / N_body restores Δv ≈ feedbackKick (as if m=1).
       kickMassRef = totalM_body / N_body;
+      // Merged particles are capped at 100× the base single-particle mass.
+      mergeCapMass = 100 * kickMassRef;
 
       // Second pass: assign orbital velocities then add particles
       var speedFactor = 0.5 + Math.random() * 0.5;
@@ -325,7 +328,10 @@
 
     // Collapse feedback — radial kicks when p90 radius drops below threshold
     var collapseThreshold = Math.min(W, H) * (0.08 + Math.random() * 0.08);
-    var feedbackKick = 2.0 + Math.random() * 1.0; // 2.0–3.0 px/frame
+    var feedbackKick = 2.0 + Math.random() * 1.0; // 2.0–3.0 px/frame (increases each merge)
+    var lastDcenterX = W * 0.5; // cached density centre — updated each kick event
+    var lastDcenterY = H * 0.5;
+    var pendingMerge = false; // set at rescue exit; merge fires at end of that frame
     var feedbackLambda = 3 + Math.random() * 7; // exponential scale length 3–10 px
     var maxSpeed = 4.0 + Math.random() * 2.0; // 4.0–6.0 px/frame
     var feedbackCooldown = 0;
@@ -408,6 +414,8 @@
           dists[i].idx = i;
           dists[i].r = Math.sqrt(dcx * dcx + dcy * dcy);
         }
+        // Mark stale slots (from prior merges) as far so they sort to the end
+        for (var si = n; si < dists.length; si++) dists[si].r = 1e9;
         dists.sort(function (a, b) {
           return a.r - b.r;
         });
@@ -444,6 +452,9 @@
               dcenterY = wy / wm;
             }
           }
+          // Cache density centre for use in post-rescue merge targeting
+          lastDcenterX = dcenterX;
+          lastDcenterY = dcenterY;
           // Compute distances from density centre for all particles.
           // p90 of these distances is used as the effective kick radius so that
           // outlier particles (well outside the dense core) are never kicked.
@@ -546,6 +557,7 @@
           feedbackCooldown = 0;
           collapseCheckFrame = collapseCheckEvery; // force check on next frame
           postRescueKicksLeft = 3;
+          if (!useTT) pendingMerge = true; // merge two core particles at end of frame
         }
       } else {
         dampFrame++;
@@ -587,6 +599,54 @@
         els[i].style.left = particles[i].x - 2.5 + "px";
         els[i].style.top = particles[i].y - 2.5 + "px";
         els[i].style.opacity = particleOpacity;
+      }
+
+      // Post-rescue merge: absorb the two particles closest to the density centre.
+      // Only runs in N-body mode, once per rescue event.
+      if (!useTT && pendingMerge) {
+        pendingMerge = false;
+        var n_now = particles.length;
+        var best1 = 0,
+          best2 = 1,
+          bestR1 = Infinity,
+          bestR2 = Infinity;
+        for (var mi = 0; mi < n_now; mi++) {
+          var mdx = particles[mi].x - lastDcenterX;
+          var mdy = particles[mi].y - lastDcenterY;
+          var mr = mdx * mdx + mdy * mdy; // squared distance, no sqrt needed
+          if (mr < bestR1) {
+            bestR2 = bestR1;
+            best2 = best1;
+            bestR1 = mr;
+            best1 = mi;
+          } else if (mr < bestR2) {
+            bestR2 = mr;
+            best2 = mi;
+          }
+        }
+        if (best1 !== best2) {
+          // Keep best1 < best2 so the splice index is predictable
+          if (best1 > best2) {
+            var tmp = best1;
+            best1 = best2;
+            best2 = tmp;
+          }
+          var p1 = particles[best1],
+            p2 = particles[best2];
+          var combinedM = p1.m + p2.m;
+          // Mass-weighted position and momentum, mass capped at mergeCapMass
+          p1.x = (p1.x * p1.m + p2.x * p2.m) / combinedM;
+          p1.y = (p1.y * p1.m + p2.y * p2.m) / combinedM;
+          p1.vx = (p1.vx * p1.m + p2.vx * p2.m) / combinedM;
+          p1.vy = (p1.vy * p1.m + p2.vy * p2.m) / combinedM;
+          p1.m = Math.min(combinedM, mergeCapMass);
+          // Remove merged-away particle from DOM and arrays
+          document.body.removeChild(els[best2]);
+          particles.splice(best2, 1);
+          els.splice(best2, 1);
+          // Bump feedback for future kicks — grows gradually with each merge
+          feedbackKick *= 1.1;
+        }
       }
 
       if (!simPaused) requestAnimationFrame(gravStep);
