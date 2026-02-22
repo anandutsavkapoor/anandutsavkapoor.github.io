@@ -177,13 +177,13 @@
     if (useTT) {
       // ── T&T flyby ICs: two disk galaxies on a parabolic encounter ─────────
       var ringsPrim = [
-        { r: 50 + Math.random() * 20, n: 80 + Math.floor(Math.random() * 20) },
-        { r: 85 + Math.random() * 25, n: 120 + Math.floor(Math.random() * 30) },
-        { r: 130 + Math.random() * 30, n: 160 + Math.floor(Math.random() * 40) },
+        { r: 50 + Math.random() * 20, n: 120 + Math.floor(Math.random() * 30) },
+        { r: 85 + Math.random() * 25, n: 180 + Math.floor(Math.random() * 40) },
+        { r: 130 + Math.random() * 30, n: 230 + Math.floor(Math.random() * 50) },
       ];
       var ringsComp = [
-        { r: 35 + Math.random() * 15, n: 60 + Math.floor(Math.random() * 20) },
-        { r: 60 + Math.random() * 20, n: 80 + Math.floor(Math.random() * 30) },
+        { r: 35 + Math.random() * 15, n: 90 + Math.floor(Math.random() * 25) },
+        { r: 60 + Math.random() * 20, n: 120 + Math.floor(Math.random() * 35) },
       ];
 
       var r_peri = Math.min(W, H) * (0.15 + Math.random() * 0.15);
@@ -250,7 +250,7 @@
       addRings(nuc2x, nuc2y, v2x, v2y, ringsComp, colPurple);
     } else {
       // ── Damped N-body ICs: random scatter with Keplerian orbital velocities ─
-      var N_body = 400 + Math.floor(Math.random() * 200); // 400–600
+      var N_body = 600 + Math.floor(Math.random() * 300); // 600–900
       var cx0 = W * (0.5 + Math.random() * 0.3);
       var cy0 = H * (0.35 + Math.random() * 0.3);
       var scatterX = W * (0.12 + Math.random() * 0.12);
