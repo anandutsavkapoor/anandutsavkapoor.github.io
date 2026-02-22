@@ -69,7 +69,7 @@ $$\Delta v_i \propto e^{-r_i / \lambda},$$
 
 where $$r_i$$ is each particle's distance from the density centre and $$\lambda \approx 3\text{--}10 \; \text{px}$$. Particles far from the centre receive negligible kicks. The effective kick radius is capped at the 90th-percentile distance from the density centre, so stray outliers are never artificially accelerated. A concentration amplifier (up to $$6\times$$) and a velocity factor that suppresses kicks on already fast-moving particles further shape the profile. Momentum is conserved within the kicked cluster: the net momentum injected by the kicks is subtracted uniformly from all kicked particles, so the cluster's centre of mass does not drift.
 
-If three consecutive feedback events fail to prevent re-collapse, the simulation applies a brief burst of strong damping to bring the kinetic energy under control, then fires a series of boosted kicks to re-expand the system.
+After three consecutive feedback kicks, the simulation applies extended damping to drain kinetic energy and allow the system to settle into a more stable configuration.
 
 ---
 
