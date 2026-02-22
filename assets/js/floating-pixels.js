@@ -406,7 +406,12 @@
             }
           }
           // Kick particles within kickRadius of the density centre
-          var kickBoost = postRescueKicksLeft > 0 ? 0.3 + Math.random() * 2.7 : 1.0;
+          var kickBoost =
+            postRescueKicksLeft > 0
+              ? useTT
+                ? 3.0 + Math.random() * 7.0 // T&T: 3–10×
+                : 0.3 + Math.random() * 2.7 // N-body: 0.3–3×
+              : 1.0;
           var kickDpx = 0;
           var kickDpy = 0;
           for (var k = 0; k < n; k++) {
