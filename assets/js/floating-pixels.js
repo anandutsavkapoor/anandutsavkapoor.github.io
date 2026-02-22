@@ -409,7 +409,7 @@
       }
       var bestCol = bestCell % SNAP_COLS;
       var bestRow = Math.floor(bestCell / SNAP_COLS);
-      if (bestCol === 0 || bestCol === SNAP_COLS - 1 || bestRow === 0 || bestRow === SNAP_ROWS - 1) {
+      if ((bestCol === 0 || bestCol === SNAP_COLS - 1 || bestRow === 0 || bestRow === SNAP_ROWS - 1) && snapGrid[bestCell] > 0.5 * totalM) {
         var refX = bbox.x0 + ((bestCol + 0.5) / SNAP_COLS) * Lx;
         var refY = bbox.y0 + ((bestRow + 0.5) / SNAP_ROWS) * Ly;
         var shiftX = bbox.x0 + Lx * 0.5 - refX;
