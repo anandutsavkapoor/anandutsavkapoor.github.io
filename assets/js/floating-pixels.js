@@ -406,7 +406,7 @@
             }
           }
           // Kick particles within kickRadius of the density centre
-          var kickBoost = postRescueKicksLeft > 0 ? 0.3 + Math.random() * 2.7 : 1.0;
+          var kickBoost = postRescueKicksLeft > 0 ? [1.0, 1.5, 2.0][Math.floor(Math.random() * 3)] : 1.0;
           var kickDpx = 0;
           var kickDpy = 0;
           for (var k = 0; k < n; k++) {
@@ -477,7 +477,7 @@
         for (var ki = 0; ki < n; ki++) {
           KE_cur += 0.5 * particles[ki].m * (particles[ki].vx * particles[ki].vx + particles[ki].vy * particles[ki].vy);
         }
-        if (KE_cur < 0.1 * KE_preDamp) {
+        if (KE_cur < 0.01 * KE_preDamp) {
           rescueDampFrames = 0;
           feedbackCooldown = 0;
           collapseCheckFrame = collapseCheckEvery; // force check on next frame
