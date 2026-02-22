@@ -335,8 +335,7 @@
 
     // Collapse feedback — radial kicks when p90 radius drops below threshold
     var collapseThreshold = Math.min(W, H) * (0.08 + Math.random() * 0.08);
-    var feedbackKick = 2.0 + Math.random() * 1.0; // 2.0–3.0 px/frame
-    var feedbackKickInit = feedbackKick; // baseline — additive ramp, cap 3×, then uniform [1×,3×]
+    var feedbackKick = 2.0 + Math.random() * 1.0; // 2.0–3.0 px/frame, fixed for sim lifetime
     var feedbackLambda = 3 + Math.random() * 7; // exponential scale length 3–10 px
     var maxSpeed = 4.0 + Math.random() * 2.0; // 4.0–6.0 px/frame
     var feedbackCooldown = 0;
@@ -521,12 +520,6 @@
                   els[seedIdx].style.borderRadius = "0";
                   els[seedIdx].style.clipPath = "polygon(50% 0%, 0% 100%, 100% 100%)";
                 }
-                // Ramp feedbackKick when mass transfer occurs
-                if (feedbackKick < 3 * feedbackKickInit) {
-                  feedbackKick = Math.min(feedbackKick + feedbackKickInit * 0.2, 3 * feedbackKickInit);
-                } else {
-                  feedbackKick = feedbackKickInit * (1 + Math.random() * 2);
-                }
               }
             }
           }
@@ -551,7 +544,7 @@
             postRescueKicksLeft > 0
               ? useTT
                 ? 3.0 + Math.random() * 7.0 // T&T: 3–10×
-                : 0.3 + Math.random() * 2.7 // N-body: 0.3–3×
+                : 0.5 + Math.random() * 4.5 // N-body: 0.5–5×
               : 1.0;
           var kickDpx = 0;
           var kickDpy = 0;
