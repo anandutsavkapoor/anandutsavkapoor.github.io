@@ -576,7 +576,7 @@
           var kickBoost =
             postRescueKicksLeft > 0
               ? useTT
-                ? 3.0 + Math.random() * 7.0 // T&T: 3–10×
+                ? 2.0 + Math.random() * 2.0 // T&T: 2–4×
                 : 0.25 + Math.random() * 2.25 // N-body: 0.25–2.5×
               : 1.0;
           var kickDpx = 0;
