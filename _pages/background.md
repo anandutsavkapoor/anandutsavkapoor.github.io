@@ -9,6 +9,8 @@ nav_order: 4
 
 The background animations on this website are small physics simulations I wrote to give the pages some life. There are two of them: one for the home page and one for every other page. This page describes how they work.
 
+If you find them distracting (a reasonable position), there is a "Pause Simulation" button in the bottom-right corner of every non-home page. The home page photons are unfortunately committed to their random walk and cannot be stopped.
+
 ---
 
 ## Home page: Monte Carlo photon random walk
