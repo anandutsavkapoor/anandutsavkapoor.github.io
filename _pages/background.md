@@ -51,7 +51,7 @@ The primary uses a cyan colour palette; the companion uses purple. The nuclei ar
 
 This mode begins from a uniform random scattering of 800 particles across the viewport. Each particle is given a sub-Keplerian tangential velocity (as if orbiting the total system mass at that radius, but somewhat slower than circular speed). The system is not in equilibrium and begins collapsing and fragmenting under self-gravity.
 
-To produce interesting long-lived structure rather than a single collapsed point, the simulation alternates between phases of free Newtonian gravity (7--10 s) and brief dissipative episodes (1--2 s) during which a damping term bleeds kinetic energy. This mimics the behaviour of a gas-rich system where dissipation competes with gravitational heating.
+To produce interesting long-lived structure, the simulation alternates between phases of free Newtonian gravity (7--10 s) and brief dissipative episodes (1--2 s) during which a damping term bleeds kinetic energy. This mimics the behaviour of a gas-rich system where dissipation competes with gravitational heating.
 
 When a collapse event is detected and quenched (see below), the densest particle gains mass by absorbing a small fraction from each of its 16 nearest neighbours. The seed roughly doubles its mass per event. After roughly seven events it reaches approximately 100 times its starting mass. Mass and momentum are exactly conserved in every transfer: the seed's new velocity is computed from the total momentum of the absorbed mass, so no net momentum is injected. Particles that grow beyond 1.5 times their initial mass are rendered as triangles; the rest remain as squares. Triangle size scales with mass as $$m^{1/3}$$ (as expected for fixed density), capped to avoid excessively large symbols.
 
@@ -59,7 +59,7 @@ When a collapse event is detected and quenched (see below), the densest particle
 
 ## Collapse feedback
 
-Without intervention, the system would eventually collapse entirely into a single point. To keep the simulation alive, a feedback mechanism fires whenever the structure becomes too concentrated.
+The intermittent damping continuously bleeds kinetic energy; without a counteracting mechanism the system would eventually collapse into a single point. To keep the simulation alive, a feedback mechanism fires whenever the structure becomes too concentrated.
 
 Each frame, the code locates the density centre of the system (the mass-weighted centroid of the densest local cluster, found by counting neighbours within a search radius for each particle). It then measures the 90th-percentile radius of all particles relative to that centre. If this falls below a threshold (8--16 per cent of the shorter viewport dimension), a feedback kick is triggered, subject to a 6--8 s cooldown between events.
 
