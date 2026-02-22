@@ -179,7 +179,7 @@
     var useTT = Math.random() < 0.5; // 50 % T&T flyby, 50 % damped N-body
     var kickMassRef = 1.0; // scaled in N-body branch to keep Δv N-invariant
     var mergeCapMass = Infinity; // set in N-body branch: 100 × m_single
-    var mergeRemnantCap = Infinity; // set in N-body branch: 200 × m_single (total across all remnants)
+    var mergeRemnantCap = Infinity; // set in N-body branch: 500 × m_single (total across all remnants)
 
     if (useTT) {
       // ── T&T flyby ICs: two disk galaxies on a parabolic encounter ─────────
@@ -297,7 +297,7 @@
       // Merged particles are capped at 100× the base single-particle mass.
       mergeCapMass = 100 * kickMassRef;
       // Total mass held across ALL merger remnants is capped at 200× m_single.
-      mergeRemnantCap = 200 * kickMassRef;
+      mergeRemnantCap = 500 * kickMassRef;
 
       // Second pass: assign orbital velocities then add particles
       var speedFactor = 0.5 + Math.random() * 0.5;
@@ -483,7 +483,7 @@
               for (var ni = 0; ni < n; ni++) {
                 if (ni === seedIdx) continue;
                 var nm = particles[ni].m;
-                if (nm > 0.25 * kickMassRef && nm <= kickMassRef) {
+                if (nm > 0.1 * kickMassRef && nm <= kickMassRef) {
                   var ndx = particles[ni].x - seed.x;
                   var ndy = particles[ni].y - seed.y;
                   nbrs.push({ idx: ni, d2: ndx * ndx + ndy * ndy });
@@ -501,7 +501,7 @@
                 var actualGain = 0;
                 for (var ei = 0; ei < nbrs.length; ei++) {
                   var pn = particles[nbrs[ei].idx];
-                  var actualLoss = Math.min(lossEach, pn.m - 0.25 * kickMassRef);
+                  var actualLoss = Math.min(lossEach, pn.m - 0.1 * kickMassRef);
                   newSeedPx += actualLoss * pn.vx;
                   newSeedPy += actualLoss * pn.vy;
                   pn.m -= actualLoss;
