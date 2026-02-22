@@ -297,6 +297,7 @@
     var rescueDampDuration = 300 + Math.floor(Math.random() * 180); // 5–8 s
     var rescueDampStrength = 0.97 + Math.random() * 0.015; // 0.970–0.985
     var KE_preDamp = 0; // kinetic energy snapshot taken when rescue damping activates
+    var postRescueKicksLeft = 0; // remaining post-rescue kicks with boosted strength
     var particleOpacity = 0.45;
 
     function gravStep() {
@@ -405,6 +406,7 @@
             }
           }
           // Kick particles within kickRadius of the density centre
+          var kickBoost = postRescueKicksLeft > 0 ? [1.0, 1.5, 2.0][Math.floor(Math.random() * 3)] : 1.0;
           var kickDpx = 0;
           var kickDpy = 0;
           for (var k = 0; k < n; k++) {
@@ -430,7 +432,7 @@
             var vx0 = particles[k].vx;
             var vy0 = particles[k].vy;
             // Force-based kick: same force on all → Δv = F/m; heavy nuclei barely move
-            var fk = (feedbackKick * concFactor * kickScale * velFactor) / particles[k].m;
+            var fk = (feedbackKick * kickBoost * concFactor * kickScale * velFactor) / particles[k].m;
             particles[k].vx += fk * rx;
             particles[k].vy += fk * ry;
             var spAfter = Math.sqrt(particles[k].vx * particles[k].vx + particles[k].vy * particles[k].vy);
@@ -450,6 +452,7 @@
             particles[k].vy -= kickDvcmy;
           }
           feedbackCooldown = feedbackCooldownMax;
+          if (postRescueKicksLeft > 0) postRescueKicksLeft--;
           feedbackCount++;
           if (feedbackCount >= feedbackCountThreshold && rescueDampFrames === 0) {
             rescueDampFrames = rescueDampDuration;
@@ -478,6 +481,7 @@
           rescueDampFrames = 0;
           feedbackCooldown = 0;
           collapseCheckFrame = collapseCheckEvery; // force check on next frame
+          postRescueKicksLeft = 3;
         }
       } else {
         dampFrame++;
