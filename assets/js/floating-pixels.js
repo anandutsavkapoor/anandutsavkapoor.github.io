@@ -328,7 +328,8 @@
 
     // Collapse feedback — radial kicks when p90 radius drops below threshold
     var collapseThreshold = Math.min(W, H) * (0.08 + Math.random() * 0.08);
-    var feedbackKick = 2.0 + Math.random() * 1.0; // 2.0–3.0 px/frame (increases each merge)
+    var feedbackKick = 2.0 + Math.random() * 1.0; // 2.0–3.0 px/frame
+    var feedbackKickInit = feedbackKick; // baseline — additive ramp, cap 3×, then uniform [1×,3×]
     var lastDcenterX = W * 0.5; // cached density centre — updated each kick event
     var lastDcenterY = H * 0.5;
     var pendingMerge = false; // set at rescue exit; merge fires at end of that frame
@@ -644,8 +645,12 @@
           document.body.removeChild(els[best2]);
           particles.splice(best2, 1);
           els.splice(best2, 1);
-          // Bump feedback for future kicks — grows gradually with each merge
-          feedbackKick *= 1.1;
+          // Ramp feedbackKick additively; once at 3× baseline, sample uniform [1×, 3×]
+          if (feedbackKick < 3 * feedbackKickInit) {
+            feedbackKick = Math.min(feedbackKick + feedbackKickInit * 0.2, 3 * feedbackKickInit);
+          } else {
+            feedbackKick = feedbackKickInit * (1 + Math.random() * 2);
+          }
         }
       }
 
