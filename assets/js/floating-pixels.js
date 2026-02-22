@@ -764,7 +764,16 @@
         zoomLevel += (zoomDesired - zoomLevel) * zoomRate;
       }
 
-      if (!simPaused) requestAnimationFrame(gravStep);
+      if (!simPaused) {
+        var stepDelay = Math.round(zoomFrac * 50); // 0 ms at zoom=1, ~50 ms at full zoom
+        if (stepDelay > 0) {
+          setTimeout(function () {
+            requestAnimationFrame(gravStep);
+          }, stepDelay);
+        } else {
+          requestAnimationFrame(gravStep);
+        }
+      }
     }
 
     gravStep();
