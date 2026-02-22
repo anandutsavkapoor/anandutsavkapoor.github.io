@@ -359,11 +359,15 @@
     var postRescueKicksLeft = 0; // remaining post-rescue kicks with boosted strength
     var particleOpacity = 0.45;
 
-    // Zoom-in once stationarity is reached (3 feedback cycles ≈ 20–30 s of dynamics)
+    // Adaptive zoom — positions computed in JS; particle DOM sizes stay fixed
     var zoomLevel = 1.0;
-    var zoomTarget = 2.0 + Math.random() * 1.5; // 2.0–3.5×
-    var zoomTriggered = false;
+    var maxZoom = 1.5 + Math.random() * 1.0; // 1.5–2.5× ceiling (randomised per load)
+    var emaKE_slow = -1; // -1 = uninitialised; set on first frame
+    var emaKE_fast = -1;
+    var stationaryFrames = 0; // consecutive calm frames; zoom-in gate requires 600 (≈10 s)
     var totalFeedbackFired = 0;
+    var smoothCmx = W * 0.5; // EMA of CoM used as zoom pivot — absorbs wrap jitter
+    var smoothCmy = H * 0.5;
 
     function gravStep() {
       var n = particles.length;
@@ -625,7 +629,6 @@
           }
           feedbackCooldown = feedbackCooldownMax;
           totalFeedbackFired++;
-          if (!zoomTriggered && totalFeedbackFired >= 3) zoomTriggered = true;
           if (postRescueKicksLeft > 0) postRescueKicksLeft--;
           feedbackCount++;
           if (feedbackCount >= feedbackCountThreshold && rescueDampFrames === 0) {
@@ -694,19 +697,39 @@
         if (particles[i].y < bbox.y0) particles[i].y += Ly;
         else if (particles[i].y >= bbox.y1) particles[i].y -= Ly;
 
-        els[i].style.left = particles[i].x - particles[i].hs + "px";
-        els[i].style.top = particles[i].y - particles[i].hs + "px";
+        // Zoom is applied in JS so particle DOM sizes stay fixed (no wrapDiv scale)
+        var sx = Lx * 0.5 + (particles[i].x - smoothCmx) * zoomLevel;
+        var sy = Ly * 0.5 + (particles[i].y - smoothCmy) * zoomLevel;
+        els[i].style.left = sx - particles[i].hs + "px";
+        els[i].style.top = sy - particles[i].hs + "px";
         els[i].style.opacity = particleOpacity;
       }
 
-      // Smooth zoom toward target once stationarity is declared
-      if (zoomTriggered && zoomLevel < zoomTarget) {
-        zoomLevel += (zoomTarget - zoomLevel) * 0.004;
+      // Update smooth CoM (EMA — absorbs per-frame jitter from periodic wrap)
+      smoothCmx += (cmx - smoothCmx) * 0.03;
+      smoothCmy += (cmy - smoothCmy) * 0.03;
+
+      // KE-based stationarity: compare fast EMA (τ≈0.3 s) to slow EMA (τ≈5.5 s)
+      var KE_zoom = 0;
+      for (var zi = 0; zi < n; zi++) {
+        KE_zoom += particles[zi].m * (particles[zi].vx * particles[zi].vx + particles[zi].vy * particles[zi].vy);
       }
-      // Center view on CoM and scale — at zoom=1 this just centers CoM on screen
-      var tx = Lx * 0.5 - cmx * zoomLevel;
-      var ty = Ly * 0.5 - cmy * zoomLevel;
-      wrapDiv.style.transform = "translate(" + tx + "px," + ty + "px) scale(" + zoomLevel + ")";
+      if (emaKE_slow < 0) {
+        emaKE_slow = KE_zoom;
+        emaKE_fast = KE_zoom;
+      }
+      emaKE_slow += (KE_zoom - emaKE_slow) * 0.003;
+      emaKE_fast += (KE_zoom - emaKE_fast) * 0.05;
+      var keRatio = emaKE_fast / (emaKE_slow + 1e-9);
+      var isCalm = keRatio > 0.7 && keRatio < 1.5;
+      if (isCalm) {
+        stationaryFrames++;
+      } else {
+        stationaryFrames = 0;
+      }
+      var zoomDesired = totalFeedbackFired >= 3 && stationaryFrames >= 600 ? maxZoom : 1.0;
+      var zoomRate = zoomDesired > zoomLevel ? 0.003 : 0.008; // creep in slowly, retreat faster
+      zoomLevel += (zoomDesired - zoomLevel) * zoomRate;
 
       if (!simPaused) requestAnimationFrame(gravStep);
     }
