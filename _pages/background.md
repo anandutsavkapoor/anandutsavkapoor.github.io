@@ -81,4 +81,4 @@ Stationarity is measured using two exponential moving averages of the kinetic en
 
 The zoom target is set so the structure fills roughly 35 per cent of the shorter viewport dimension. The zoom is applied in JavaScript at render time rather than via CSS transforms, so particle sizes remain unaffected.
 
-Zoom tracking only begins after three feedback events have fired. Before that, the simulation runs at full viewport scale with no tracking, to avoid the display drifting around while the system is still settling.
+Zoom tracking only begins after three feedback events have fired. Before that, the simulation runs at full viewport scale with no tracking, to avoid the display drifting around while the system is still settling. It occasionally does funny things anyway.
