@@ -37,6 +37,13 @@ ninja.data = [{
           handler: () => {
             window.location.href = "/cv/";
           },
+        },{id: "nav-resources",
+          title: "resources",
+          description: "Public data releases associated with my research.",
+          section: "Navigation",
+          handler: () => {
+            window.location.href = "/resources/";
+          },
         },{id: "projects-boxy-dwarfs-in-perseus",
           title: 'Boxy dwarfs in Perseus',
           description: "Euclid Early Release Observations · galaxy morphology",
