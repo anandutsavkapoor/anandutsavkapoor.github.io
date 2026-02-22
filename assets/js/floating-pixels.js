@@ -335,7 +335,9 @@
 
     // Collapse feedback — radial kicks when p90 radius drops below threshold
     var collapseThreshold = Math.min(W, H) * (0.08 + Math.random() * 0.08);
-    var feedbackKick = 2.0 + Math.random() * 1.0; // 2.0–3.0 px/frame, fixed for sim lifetime
+    var feedbackKick = useTT
+      ? 2.0 + Math.random() * 1.0 // T&T: 2.0–3.0 px/frame
+      : 0.5 + Math.random() * 1.0; // N-body: 0.5–1.5 px/frame
     var feedbackLambda = 3 + Math.random() * 7; // exponential scale length 3–10 px
     var maxSpeed = 4.0 + Math.random() * 2.0; // 4.0–6.0 px/frame
     var feedbackCooldown = 0;
