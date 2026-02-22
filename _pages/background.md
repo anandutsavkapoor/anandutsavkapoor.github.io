@@ -41,7 +41,7 @@ where $$\varepsilon \approx 12\text{--}19 \; \text{px}$$ is a softening length t
 
 ### Mode A: Toomre & Toomre galaxy flyby
 
-This mode recreates the setup of [Toomre & Toomre (1972)](https://ui.adsabs.harvard.edu/abs/1972ApJ...178..623T): two disk galaxies on a parabolic encounter (total orbital energy exactly zero).
+This mode is inspired by the setup of [Toomre & Toomre (1972)](https://ui.adsabs.harvard.edu/abs/1972ApJ...178..623T): two disk galaxies on a parabolic encounter (total orbital energy exactly zero).
 
 Each galaxy consists of a massive central nucleus surrounded by concentric rings of test particles. The ring particles start on circular Keplerian orbits around their nucleus and carry no self-gravity against one another; only the nuclei attract them. As the companion swings past the primary on its parabolic trajectory, the tidal force stretches the outer rings of the primary into long tidal arms. The companion's own disk is distorted in turn.
 
