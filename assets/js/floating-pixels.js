@@ -428,8 +428,10 @@
             }
             var vx0 = particles[k].vx;
             var vy0 = particles[k].vy;
-            particles[k].vx += feedbackKick * concFactor * kickScale * velFactor * rx;
-            particles[k].vy += feedbackKick * concFactor * kickScale * velFactor * ry;
+            // Force-based kick: same force on all → Δv = F/m; heavy nuclei barely move
+            var fk = (feedbackKick * concFactor * kickScale * velFactor) / particles[k].m;
+            particles[k].vx += fk * rx;
+            particles[k].vy += fk * ry;
             var spAfter = Math.sqrt(particles[k].vx * particles[k].vx + particles[k].vy * particles[k].vy);
             if (spAfter > maxSpeed) {
               particles[k].vx = (particles[k].vx / spAfter) * maxSpeed;
