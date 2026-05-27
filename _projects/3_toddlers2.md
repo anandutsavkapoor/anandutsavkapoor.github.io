@@ -10,4 +10,4 @@ TODDLERS 2.0 is a major extension of the [TODDLERS](https://academic.oup.com/mnr
 
 Code: [github.com/anandutsavkapoor/TODDLERS](https://github.com/anandutsavkapoor/TODDLERS)
 
-_In preparation._
+_Submitted._
