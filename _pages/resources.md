@@ -15,7 +15,7 @@ This page links to public data portals associated with my published work.
 
 [toddlers.ugent.be](https://toddlers.ugent.be) · [github.com/anandutsavkapoor/TODDLERS](https://github.com/anandutsavkapoor/TODDLERS)
 
-TODDLERS (Time evolution of Observables including Dust Diagnostics and Line Emission from Regions containing young Stars) is a library of spectral energy distributions and other observables for star-forming regions, computed with [SKIRT](https://skirt.ugent.be). The data are distributed as SciPy interpolator objects for direct use in Python. The library is described in [Kapoor et al. (2023)](https://academic.oup.com/mnras/article/526/3/3871/7287615), with the extended framework — covering arbitrary IMFs, binary populations, stochastic sampling, and non-uniform cloud profiles — presented in [Kapoor et al. (2026)](https://arxiv.org/abs/2606.15184). The accompanying open-source Python package is available on GitHub.
+TODDLERS (Time evolution of Observables including Dust Diagnostics and Line Emission from Regions containing young Stars) is a library of spectral energy distributions and other observables for star-forming regions, computed with [SKIRT](https://skirt.ugent.be). The data are distributed as SciPy interpolator objects for direct use in Python. The library is described in [Kapoor et al. (2023)](https://academic.oup.com/mnras/article/526/3/3871/7287615), with the extended framework (covering arbitrary IMFs, binary populations, stochastic sampling, and non-uniform cloud profiles) presented in [Kapoor et al. (2026)](https://arxiv.org/abs/2606.15184). The accompanying open-source Python package is available on GitHub.
 
 ---
 
