@@ -59,6 +59,16 @@ ninja.data = [{
           description: "Extended star-forming region emission framework",
           section: "Projects",handler: () => {
               window.location.href = "/projects/3_toddlers2/";
+            },},{id: "projects-surface-brightness-fluctuations-with-euclid",
+          title: 'Surface brightness fluctuations with Euclid',
+          description: "SBF distances · dwarf galaxy membership · Euclid DR1",
+          section: "Projects",handler: () => {
+              window.location.href = "/projects/4_sbf/";
+            },},{id: "projects-peanut-dwarfs-hydrodynamic-follow-up",
+          title: 'Peanut dwarfs, hydrodynamic follow-up',
+          description: "AREPO simulations · tidal transformation · dwarf morphology",
+          section: "Projects",handler: () => {
+              window.location.href = "/projects/5_peanut_hydro/";
             },},{
         id: 'social-email',
         title: 'email',
