@@ -69,6 +69,11 @@ ninja.data = [{
           description: "AREPO simulations · tidal transformation · dwarf morphology",
           section: "Projects",handler: () => {
               window.location.href = "/projects/5_peanut_hydro/";
+            },},{id: "projects-emission-lines-from-cosmological-simulations",
+          title: 'Emission lines from cosmological simulations',
+          description: "MEGATRON · FIREbox · JWST rest-optical predictions",
+          section: "Projects",handler: () => {
+              window.location.href = "/projects/6_megatron/";
             },},{
         id: 'social-email',
         title: 'email',
