@@ -10,4 +10,4 @@ TODDLERS 2.0 is a major extension of the [TODDLERS](https://academic.oup.com/mnr
 
 Code: [github.com/anandutsavkapoor/TODDLERS](https://github.com/anandutsavkapoor/TODDLERS)
 
-Preprint: [arXiv:2606.15184](https://arxiv.org/abs/2606.15184), _TODDLERS 2.0: Stellar feedback and observables across diverse IMFs, binary populations, and cloud environments._
+Preprint: [arXiv:2606.15184](https://arxiv.org/abs/2606.15184), _TODDLERS 2.0: Stellar feedback and observables across diverse IMFs, binary populations, and cloud environments_ (A&A, in press).
