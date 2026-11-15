@@ -71,7 +71,7 @@ ninja.data = [{
               window.location.href = "/projects/5_peanut_hydro/";
             },},{id: "projects-emission-lines-from-cosmological-simulations",
           title: 'Emission lines from cosmological simulations',
-          description: "MEGATRON · FIREbox · JWST rest-optical predictions",
+          description: "MEGATRON · JWST rest-optical predictions",
           section: "Projects",handler: () => {
               window.location.href = "/projects/6_megatron/";
             },},{
