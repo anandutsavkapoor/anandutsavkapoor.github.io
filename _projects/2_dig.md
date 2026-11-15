@@ -10,4 +10,4 @@ I develop modules for the [SKIRT](https://skirt.ugent.be) radiative transfer cod
 
 Code: the [`DiffuseIonizedGasMix`](https://skirt.ugent.be/skirt9/class_diffuse_ionized_gas_mix.html) module is now part of public [SKIRT9](https://github.com/SKIRT/SKIRT9).
 
-Preprint: [arXiv:2607.09961](https://arxiv.org/abs/2607.09961), _Predicting ionised gas emission in 3D with SKIRT. I. Framework and validation_ (A&A, in press).
+Paper: _Predicting ionized gas emission in 3D with SKIRT: I. Framework and validation_, [A&A 713, A279 (2026)](https://doi.org/10.1051/0004-6361/202660114) ([arXiv:2607.09961](https://arxiv.org/abs/2607.09961)).

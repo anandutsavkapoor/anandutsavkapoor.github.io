@@ -20,11 +20,20 @@ cv:
         position: Postdoctoral Researcher
         location: Ghent, Belgium
         url: https://www.ugent.be/
-        start_date: 2023
+        start_date: 2024-10
         end_date: present
         highlights:
           - Radiative transfer modeling of ionized gas emission in SKIRT
           - Galaxy morphology with Euclid Early Release Observations (Perseus cluster)
+
+      - company: Laboratoire Lagrange, Observatoire de la Côte d'Azur
+        position: Postdoctoral Researcher
+        location: Nice, France
+        url: https://www.oca.eu/
+        start_date: 2023-11
+        end_date: 2024-06
+        highlights:
+          - 3D radiation-hydrodynamics simulations of stellar convection with CO5BOLD (radiation pressure)
 
     Education:
       - institution: Ghent University
@@ -36,7 +45,11 @@ cv:
         end_date: 2023
         highlights:
           - "Thesis: Realistic multi-wavelength mock observations for the Auriga cosmological simulations"
-          - Developed TODDLERS — a UV-to-mm emission library for star-forming regions in SKIRT
+          - Developed TODDLERS, a UV-to-mm emission library for star-forming regions in SKIRT
+
+    Talks:
+      - bullet: "Nov 2026: *Ionized gas observables with 1D and 3D models*, talk, and SKIRT photoionization tutorial (with A. Gebek and M. Baes), Lorentz Center workshop *From Galaxy Formation Simulations to Observations Using Forward Modelling*, Leiden"
+      - bullet: "Sep 2026: *Predicting ionized-gas emission from galaxy simulations in 3D with SKIRT*, contributed talk, BUGS2026 *Building Galaxies from Scratch II*, Heidelberg"
 
     Languages:
       - name: English
