@@ -47,6 +47,23 @@ cv:
           - "Thesis: Realistic multi-wavelength mock observations for the Auriga cosmological simulations"
           - Developed TODDLERS, a UV-to-mm emission library for star-forming regions in SKIRT
 
+      - institution: Observatoire Astronomique de Strasbourg, Université de Strasbourg
+        location: Strasbourg, France
+        url: https://astro.unistra.fr/
+        area: Astrophysics
+        studyType: Master
+        start_date: 2018
+        end_date: 2019
+
+      - institution: École Centrale de Lille and Université de Poitiers
+        location: Lille and Poitiers, France
+        area: Turbulence
+        studyType: Master
+        start_date: 2016
+        end_date: 2018
+        highlights:
+          - Joint programme of the Laboratoire de Mécanique des Fluides de Lille and Institut Pprime
+
     Talks:
       - bullet: "Nov 2026: *Ionized gas observables with 1D and 3D models*, talk, and SKIRT photoionization tutorial (with A. Gebek and M. Baes), Lorentz Center workshop *From Galaxy Formation Simulations to Observations Using Forward Modelling*, Leiden"
       - bullet: "Sep 2026: *Predicting ionized-gas emission from galaxy simulations in 3D with SKIRT*, contributed talk, BUGS2026 *Building Galaxies from Scratch II*, Heidelberg"
