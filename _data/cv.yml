@@ -40,7 +40,7 @@ cv:
         location: Ghent, Belgium
         url: https://www.ugent.be/
         area: Astrophysics
-        studyType: PhD
+        degree: PhD
         start_date: 2019
         end_date: 2023
         highlights:
@@ -51,14 +51,14 @@ cv:
         location: Strasbourg, France
         url: https://astro.unistra.fr/
         area: Astrophysics
-        studyType: Master
+        degree: MSc
         start_date: 2018
         end_date: 2019
 
       - institution: École Centrale de Lille and Université de Poitiers
         location: Lille and Poitiers, France
         area: Turbulence
-        studyType: Master
+        degree: MSc
         start_date: 2016
         end_date: 2018
         highlights:

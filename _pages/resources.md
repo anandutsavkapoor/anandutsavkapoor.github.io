@@ -19,6 +19,14 @@ TODDLERS (Time evolution of Observables including Dust Diagnostics and Line Emis
 
 ---
 
+### Ionized gas emission in SKIRT
+
+[DiffuseIonizedGasMix documentation](https://skirt.ugent.be/skirt9/class_diffuse_ionized_gas_mix.html) · [github.com/SKIRT/SKIRT9](https://github.com/SKIRT/SKIRT9)
+
+The `DiffuseIonizedGasMix` module in public [SKIRT9](https://github.com/SKIRT/SKIRT9) predicts emission lines from photoionized gas, including diffuse ionized gas, in post-processed galaxy simulations. It characterizes the local ionizing radiation field in five bins between 1 and 6 Ryd and reads the gas temperature, opacity and line emissivities from precomputed [Cloudy](https://trac.nublado.org) tables, which yields spatially resolved line maps and synthetic IFU datacubes. The method and its validation are described in [Kapoor et al. (2026)](https://doi.org/10.1051/0004-6361/202660114).
+
+---
+
 ### SKIRT-Auriga synthetic observations
 
 [auriga.ugent.be](https://auriga.ugent.be)

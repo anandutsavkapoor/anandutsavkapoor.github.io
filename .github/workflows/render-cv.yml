@@ -42,7 +42,11 @@ jobs:
             echo "Missing RenderCV config file!"
             exit 1
           fi
-          rendercv render $cv_file --settings $settings
+          # The site's CV page uses label, image, summary and address, which RenderCV rejects,
+          # so RenderCV reads a copy without them.
+          python -c "import yaml; d = yaml.safe_load(open('$cv_file')); [d['cv'].pop(k, None) for k in ('label', 'image', 'summary', 'address')]; yaml.safe_dump(d, open('_data/cv_rendercv.yml', 'w'), allow_unicode=True, sort_keys=False)"
+          rendercv render _data/cv_rendercv.yml --settings $settings
+          rm _data/cv_rendercv.yml
           rm assets/rendercv/rendercv_output/*.typ
       - name: Upload rendercv_output as an artifact
         uses: actions/upload-artifact@v4
